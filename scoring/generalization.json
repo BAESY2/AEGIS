@@ -1,0 +1,38 @@
+{
+  "s01:rate-based": {
+    "cfg": [
+      "rate",
+      6,
+      4
+    ],
+    "train": 1.0,
+    "test": 0.0,
+    "gap": 1.0
+  },
+  "s01:behavioral": {
+    "cfg": [
+      "beh"
+    ],
+    "train": 1.0,
+    "test": 1.0,
+    "gap": 0.0
+  },
+  "s02:fixed-anchor": {
+    "cfg": [
+      "fixed",
+      609
+    ],
+    "train": 1.0,
+    "test": 0.0,
+    "gap": 1.0
+  },
+  "s02:lagged-oracle": {
+    "cfg": [
+      "lagged",
+      300
+    ],
+    "train": 1.0,
+    "test": 1.0,
+    "gap": 0.0
+  }
+}

@@ -1,0 +1,10 @@
+out/
+cache/
+broadcast/
+scoring/results.json
+scoring/run.json
+scoring/matchup.json
+scoring/matchup02.json
+__pycache__/
+*.pyc
+.env
