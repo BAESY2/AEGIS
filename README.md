@@ -154,7 +154,8 @@ the structural family and the agent trivially scores 1.0. **The environment
 teaches the same lesson the benchmark proves: structure beats thresholds.**
 
 (The original epsilon-greedy bandit demo — an agent discovering the optimal cap
-from scratch — is still here: `python3 aegis-gym/train.py`.)
+from scratch — is still here: `python3 aegis-gym/train.py`.) The environment and
+agent are documented in [docs/RL.md](./docs/RL.md).
 
 ## Add your own defense in ~5 minutes
 
