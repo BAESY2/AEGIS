@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-06-19T16:57:56Z",
+  "generated_utc": "2026-06-19T17:28:31Z",
   "scenarios": {
     "reentrancy": {
       "id": "01",
@@ -20,6 +20,17 @@
           "scenario": "reentrancy",
           "family": "behavioral",
           "label": "PerAddressInvariant (per-tx balance)",
+          "structural": true,
+          "worst_case_saved": 1.0,
+          "worst_case_reward": 1.0,
+          "mean_saved": 1.0,
+          "fp": 0,
+          "benign_total": 4
+        },
+        {
+          "scenario": "reentrancy",
+          "family": "behavioral",
+          "label": "ReentrancyLock (one entry per tx)",
           "structural": true,
           "worst_case_saved": 1.0,
           "worst_case_reward": 1.0,

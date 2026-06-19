@@ -102,7 +102,9 @@ The full, **auto-generated** ranking lives in [LEADERBOARD.md](./LEADERBOARD.md)
 (regenerate with `aegis bench`). Each defense is ranked by **worst-case reward**
 — the minimum, over the entire attacker grid, of `funds_saved − false_positive_rate`
 — because a production defense is only as good as its worst day against any
-attacker in the family. The structural defense tops every scenario.
+attacker in the family. The structural defense tops every scenario. The task is
+pinned as a frozen, versioned spec in [BENCHMARK.md](./BENCHMARK.md) so scores
+stay comparable over time (the SWE-bench model).
 
 ## The core abstraction
 

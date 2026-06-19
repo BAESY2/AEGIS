@@ -85,7 +85,13 @@ def _behavioral_family() -> list[DefenseConfig]:
             label="PerAddressInvariant (per-tx balance)",
             env={"AEGIS_DEF": "peraddr"},
             structural=True,
-        )
+        ),
+        DefenseConfig(
+            family="behavioral",
+            label="ReentrancyLock (one entry per tx)",
+            env={"AEGIS_DEF": "lock"},
+            structural=True,
+        ),
     ]
 
 
