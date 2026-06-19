@@ -28,7 +28,7 @@ outcome the EVM itself certifies — funds saved, with no human labels.
 The sharpest question a defense benchmark can answer is **generalization**: a
 defense tuned against the attacks you've *seen* — does it hold against the ones
 you *haven't*? Aegis makes that measurable, and the answer is consistent across
-**three structurally different vulnerability classes**:
+**four structurally different vulnerability classes**:
 
 | Scenario | Defense family | Train | **Test (unseen)** | Gap |
 |----------|----------------|:-----:|:-----------------:|:---:|
@@ -38,6 +38,8 @@ you *haven't*? Aegis makes that measurable, and the answer is consistent across
 | 02 Oracle manip. | **structural** (lagged oracle) | 1.00 | **1.00** | **0.00** ✅ generalizes |
 | 03 Access control | rate / threshold | 1.00 | **0.00** | **1.00** ❌ overfits |
 | 03 Access control | **structural** (auth invariant) | 1.00 | **1.00** | **0.00** ✅ generalizes |
+| 04 Gov. takeover | vote-count cap | 1.00 | **0.00** | **1.00** ❌ overfits |
+| 04 Gov. takeover | **structural** (snapshot invariant) | 1.00 | **1.00** | **0.00** ✅ generalizes |
 
 > Threshold/rate defenses score perfectly on the attackers they were tuned on and
 > **collapse to zero** on held-out ones. Structural defenses — which enforce an
@@ -88,7 +90,7 @@ Everything is also exposed as `make` targets (`make bench`, `make generalize`,
 
 ## The benchmark today
 
-Three vulnerability classes, each with a vulnerable target, a parameterized
+Four vulnerability classes, each with a vulnerable target, a parameterized
 exploit, a legitimate-traffic suite (including an adversarial-looking-but-honest
 "whale"), and competing defense families:
 
@@ -97,6 +99,7 @@ exploit, a legitimate-traffic suite (including an adversarial-looking-but-honest
 | 01 | **Reentrancy** | interaction-before-effects drain | windowed outflow rate limit | per-address, per-tx balance invariant (EIP-1153) |
 | 02 | **Oracle / price manipulation** | collateral valued at AMM spot price | fixed price-deviation anchor | one-block-lagged oracle (mini-TWAP) |
 | 03 | **Broken access control** | privileged function missing its auth check | value/rate cap on withdrawals | identity invariant ("only the admin may call") |
+| 04 | **Flash-loan governance takeover** | votes counted at current balance | vote-count cap | snapshot invariant (prior-block holdings) |
 
 The full, **auto-generated** ranking lives in [LEADERBOARD.md](./LEADERBOARD.md)
 (regenerate with `aegis bench`). Each defense is ranked by **worst-case reward**
@@ -196,7 +199,7 @@ LEADERBOARD.md                        # auto-generated ranking
 
 ## Project status
 
-Past proof-of-concept: a verifiable environment with **three vulnerability
+Past proof-of-concept: a verifiable environment with **four vulnerability
 classes**, a unified benchmark/leaderboard, a continuous policy-gradient learner,
 and reproducible results — co-evolution beats single-attacker training (worst-case
 funds saved 0.00 → 0.50), structural defenses cross the floor threshold defenses
@@ -208,8 +211,8 @@ draft: [docs/PAPER.md](./docs/PAPER.md). Design: [docs/DESIGN.md](./docs/DESIGN.
 
 ## Roadmap
 
-- **Scenarios:** `01 reentrancy`, `02 oracle manipulation`, `03 access control`
-  (done) → `04 ERC4626 share-inflation` → `05 governance takeover` →
+- **Scenarios:** `01 reentrancy`, `02 oracle manipulation`, `03 access control`,
+  `04 flash-loan governance takeover` (done) → `05 ERC4626 share-inflation` →
   `06 honeypot/canary tripwire`. Later scenarios run against forked mainnet state.
 - **Learning (done):** a Gymnasium-style env + a continuous policy-gradient agent
   that learns a robust defense from verifiable reward alone.

@@ -261,32 +261,40 @@ human/governance-gated and out of scope for autonomous control.
 5. A hosted leaderboard that accumulates submitted attack/defense trajectories —
    the compounding dataset asset.
 
-## Addendum (post-report): a third vulnerability class and a continuous learner
+## Addendum (post-report): two more vulnerability classes and a continuous learner
 
-Two extensions made after the report above further support its thesis. Both are
+Extensions made after the report above further support its thesis. All are
 reproducible from the unified `aegis` benchmark CLI and do not alter any number
 in Sections 4–5.
 
-**A third vulnerability class — broken access control (Scenario 03).** A
+**Two more vulnerability classes.** *Scenario 03 — broken access control:* a
 treasury whose privileged `adminWithdraw` is missing its authorization check (the
 single most common cause of real on-chain losses). The attacker is a non-admin
-draining at a tunable rate; the threshold family is the same windowed outflow cap
-as Scenario 01, and the structural family is an *identity invariant* —
-`OwnerOnlyDefense`, which allows the action only if the caller is the configured
-admin (read from `ctx`), ignoring amount entirely. Under the same train/test
-protocol (train takes {5,7,11}, test {2,3,4}):
+draining at a tunable rate; the threshold family is a windowed outflow cap and
+the structural family is an *identity invariant* (`OwnerOnlyDefense`: the caller
+must be the configured admin, read from `ctx`). *Scenario 04 — flash-loan
+governance takeover (the Beanstalk class):* a governor that counts votes at the
+current token balance, so an attacker flash-borrows voting power, clears quorum,
+drains the treasury, and repays atomically. The threshold family is a vote-count
+cap; the structural family is a *snapshot invariant* (`SnapshotVoteGuard`: votes
+must be backed by start-of-block holdings). Under the same train/test protocol:
 
 | Scenario | Family | Train | Test | Gap |
 |----------|--------|:-----:|:----:|:---:|
 | 03 access control | rate-based (windowed cap) | 1.00 | 0.00 | **1.00** |
 | 03 access control | structural (authorization invariant) | 1.00 | 1.00 | **0.00** |
+| 04 governance | vote-count cap | 1.00 | 0.00 | **1.00** |
+| 04 governance | structural (snapshot invariant) | 1.00 | 1.00 | **0.00** |
 
-The overfit-vs-generalize separation reappears unchanged in a third,
-structurally distinct class — evidence the methodology, not a quirk of one bug,
-is what is being measured. All three classes are now driven from one declarative
-registry; `python3 -m aegis bench` produces a unified worst-case leaderboard and
-the generalization study, and `python3 -m aegis verify` asserts these invariants
-as a CI gate.
+The overfit-vs-generalize separation reappears unchanged in two more,
+structurally distinct classes — evidence the methodology, not a quirk of one bug,
+is what is being measured. Scenario 04 is the sharpest instance: a minimal
+flash-loan attacker borrowing exactly the quorum is *identical to a legitimate
+quorum-holding voter by vote count*, so no count threshold can separate them;
+only the snapshot — was the stake held before this block? — can. All four classes
+are now driven from one declarative registry; `python3 -m aegis bench` produces a
+unified worst-case leaderboard and the generalization study, and
+`python3 -m aegis verify` asserts these invariants as a CI gate.
 
 **A continuous policy-gradient learner.** Section 4 used grid best-response (the
 simplest learner). We add a Gymnasium-style environment (`aegis.env`) with a

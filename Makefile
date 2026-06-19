@@ -54,4 +54,4 @@ generalize:
 	cd aegis-gym && python3 generalize.py
 
 clean:
-	forge clean && rm -f scoring/run.json scoring/matchup.json scoring/matchup02.json scoring/matchup03.json scoring/results.json
+	forge clean && rm -f scoring/run.json scoring/matchup.json scoring/matchup02.json scoring/matchup03.json scoring/matchup04.json scoring/results.json

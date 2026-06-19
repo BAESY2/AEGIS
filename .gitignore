@@ -6,6 +6,7 @@ scoring/run.json
 scoring/matchup.json
 scoring/matchup02.json
 scoring/matchup03.json
+scoring/matchup04.json
 __pycache__/
 *.pyc
 .env

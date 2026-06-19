@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-06-19T17:28:31Z",
+  "generated_utc": "2026-06-19T17:34:31Z",
   "scenarios": {
     "reentrancy": {
       "id": "01",
@@ -391,6 +391,108 @@
             "scenario": "access",
             "family": "identity",
             "trained_label": "OwnerOnly (authorization invariant)",
+            "structural": true,
+            "train": 1.0,
+            "test": 1.0,
+            "gap": 0.0
+          }
+        ]
+      }
+    },
+    "governance": {
+      "id": "04",
+      "title": "Flash-loan governance takeover",
+      "summary": "A governor that counts votes at the current token balance, so an attacker flash-borrows voting power, clears quorum, drains the treasury, and repays atomically (the Beanstalk class). A vote-count cap cannot tell a borrowed quorum from a held one \u2014 they are identical by count \u2014 so it overfits; a snapshot invariant ('votes must be backed by prior-block holdings') stops any flash loan at any size with zero false positives.",
+      "attacker_knob": "AEGIS_TAKE",
+      "attacker_grid": [
+        100,
+        150,
+        300,
+        1000,
+        5000
+      ],
+      "benign_total": 2,
+      "leaderboard": [
+        {
+          "scenario": "governance",
+          "family": "snapshot",
+          "label": "SnapshotVoteGuard (prior-block holdings)",
+          "structural": true,
+          "worst_case_saved": 1.0,
+          "worst_case_reward": 1.0,
+          "mean_saved": 1.0,
+          "fp": 0,
+          "benign_total": 2
+        },
+        {
+          "scenario": "governance",
+          "family": "vote-cap",
+          "label": "MaxVotesGuard(<= 250)",
+          "structural": false,
+          "worst_case_saved": 0.0,
+          "worst_case_reward": 0.0,
+          "mean_saved": 0.6,
+          "fp": 0,
+          "benign_total": 2
+        },
+        {
+          "scenario": "governance",
+          "family": "vote-cap",
+          "label": "MaxVotesGuard(<= 500)",
+          "structural": false,
+          "worst_case_saved": 0.0,
+          "worst_case_reward": 0.0,
+          "mean_saved": 0.4,
+          "fp": 0,
+          "benign_total": 2
+        },
+        {
+          "scenario": "governance",
+          "family": "vote-cap",
+          "label": "MaxVotesGuard(<= 2000)",
+          "structural": false,
+          "worst_case_saved": 0.0,
+          "worst_case_reward": 0.0,
+          "mean_saved": 0.2,
+          "fp": 0,
+          "benign_total": 2
+        },
+        {
+          "scenario": "governance",
+          "family": "vote-cap",
+          "label": "MaxVotesGuard(<= 150)",
+          "structural": false,
+          "worst_case_saved": 0.0,
+          "worst_case_reward": -0.5,
+          "mean_saved": 0.6,
+          "fp": 1,
+          "benign_total": 2
+        }
+      ],
+      "generalization": {
+        "train": [
+          300,
+          1000,
+          5000
+        ],
+        "test": [
+          100,
+          150
+        ],
+        "rows": [
+          {
+            "scenario": "governance",
+            "family": "vote-cap",
+            "trained_label": "MaxVotesGuard(<= 250)",
+            "structural": false,
+            "train": 1.0,
+            "test": 0.0,
+            "gap": 1.0
+          },
+          {
+            "scenario": "governance",
+            "family": "snapshot",
+            "trained_label": "SnapshotVoteGuard (prior-block holdings)",
             "structural": true,
             "train": 1.0,
             "test": 1.0,

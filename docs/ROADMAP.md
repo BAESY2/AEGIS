@@ -20,22 +20,22 @@ engineer.
 
 ## M1 — Scenario library (in progress)
 
-THREE structurally different vulnerability classes are DONE, each reproducing
+FOUR structurally different vulnerability classes are DONE, each reproducing
 the overfit-vs-generalize result, which is what proves the *methodology* (not a
 quirk of one bug) is what's being measured:
 
-- Scenario 01 — reentrancy (rate threshold vs per-address invariant).
+- Scenario 01 — reentrancy (rate threshold vs per-address invariant / reentrancy lock).
 - Scenario 02 — oracle/price manipulation (fixed anchor vs lagged oracle).
 - Scenario 03 — broken access control (value/rate cap vs authorization invariant).
+- Scenario 04 — flash-loan governance takeover (vote-count cap vs snapshot invariant).
 
-All three are wired into a single declarative registry, so the unified
+All four are wired into a single declarative registry, so the unified
 leaderboard, generalization study, and arms race pick them up automatically
 (`python3 -m aegis bench`). Remaining — the biggest credibility jump is more,
 and *forked-mainnet*, classes:
 
 - ERC4626 share-inflation / first-depositor donation (local; rounding/economic).
 - Flash-loan price manipulation (forked mainnet; pinned block; real DEX pair).
-- Governance takeover.
 - Honeypot / canary tripwire (local; first touch trips the breaker).
 - Dependency: an archive RPC (Alchemy/Infura) and a `forking` profile.
 

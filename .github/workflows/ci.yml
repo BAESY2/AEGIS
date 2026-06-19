@@ -71,6 +71,7 @@ jobs:
           python3 -m aegis score reentrancy peraddr 2
           python3 -m aegis score oracle lagged 3
           python3 -m aegis score access owneronly 11
+          python3 -m aegis score governance snapshot 100
 
   benchmark-invariants:
     # The "living benchmark" gate: on the EVM, the structural defense must top

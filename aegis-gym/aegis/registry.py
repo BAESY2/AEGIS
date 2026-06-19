@@ -106,6 +106,28 @@ def _owner_only_family() -> list[DefenseConfig]:
     ]
 
 
+def _max_votes_family() -> list[DefenseConfig]:
+    return [
+        DefenseConfig(
+            family="vote-cap",
+            label=f"MaxVotesGuard(<= {cap})",
+            env={"AEGIS_DEF": "maxvotes", "AEGIS_CAP": cap},
+        )
+        for cap in (150, 250, 500, 2000)
+    ]
+
+
+def _snapshot_family() -> list[DefenseConfig]:
+    return [
+        DefenseConfig(
+            family="snapshot",
+            label="SnapshotVoteGuard (prior-block holdings)",
+            env={"AEGIS_DEF": "snapshot"},
+            structural=True,
+        )
+    ]
+
+
 def _fixed_anchor_family() -> list[DefenseConfig]:
     return [
         DefenseConfig(
@@ -195,6 +217,29 @@ SCENARIOS: dict[str, Scenario] = {
         families={
             "rate-based": _rate_family(),
             "identity": _owner_only_family(),
+        },
+    ),
+    "governance": Scenario(
+        id="04",
+        key="governance",
+        title="Flash-loan governance takeover",
+        summary=(
+            "A governor that counts votes at the current token balance, so an "
+            "attacker flash-borrows voting power, clears quorum, drains the "
+            "treasury, and repays atomically (the Beanstalk class). A vote-count "
+            "cap cannot tell a borrowed quorum from a held one — they are "
+            "identical by count — so it overfits; a snapshot invariant ('votes "
+            "must be backed by prior-block holdings') stops any flash loan at any "
+            "size with zero false positives."
+        ),
+        match_test="test_matchup04",
+        json_file="matchup04.json",
+        attacker_knob="AEGIS_TAKE",
+        attacker_grid=[100, 150, 300, 1000, 5000],
+        benign_total=2,
+        families={
+            "vote-cap": _max_votes_family(),
+            "snapshot": _snapshot_family(),
         },
     ),
 }
