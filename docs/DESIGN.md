@@ -28,8 +28,9 @@ it does not.
 - **Target** exposes exactly one integration point — the `authorize` hook — at
   the top of each sensitive function. Everything else is left deliberately
   exploitable, so the *defense*, not the target, is what is measured.
-- **Attack** is a self-contained exploit contract. Scenario 01 (reentrancy) runs
-  fully local; scenarios 02–04 pin a mainnet fork block for realistic state.
+- **Attack** is a self-contained exploit contract. Scenarios 01–04 all run fully
+  local (deterministic, no network); forked-mainnet variants are on the roadmap
+  and will pin a block for realistic state.
 - **Benign** is a suite of legitimate interactions used to measure collateral
   damage (false positives).
 - **Scorer** is a Foundry test. It runs the attack and the benign suite on
@@ -105,17 +106,22 @@ distribution; the gym + hosted leaderboard accumulate the trajectory dataset.
 
 ## 7. Roadmap
 
-1. Scenario 02 — oracle/price manipulation (local mock AMM) is implemented; the
-   forked-mainnet flash-loan variant is next.
-2. Scenario 03 — oracle manipulation.
-3. Scenario 04 — governance takeover.
-   Co-evolution (attacker drain-rate vs defender window/cap) is implemented; see
-   `aegis-gym/coevolve.py` and docs/PAPER.md. Per-address/behavioral defenses are
-   the identified next escalation.
-4. Scenario 05 — honeypot/canary tripwire (decoy target whose first touch trips
-   the breaker before the real vault is reachable).
-5. `aegis-gym` Python wrapper over the Foundry scorer (done; bandit reference
-   agent). Next: continuous/multi-parameter defenses and a real policy-gradient
-   agent.
-6. Hosted leaderboard (Cloudflare Workers + D1) for submissions and trajectory
-   capture.
+Four vulnerability classes are implemented and reproduce the
+overfit-vs-generalize result (see docs/PAPER.md, BENCHMARK.md):
+
+1. Scenario 01 — reentrancy (rate cap / reentrancy lock / per-address invariant).
+2. Scenario 02 — oracle/price manipulation (fixed anchor vs lagged oracle).
+3. Scenario 03 — broken access control (value cap vs authorization invariant).
+4. Scenario 04 — flash-loan governance takeover (vote cap vs snapshot invariant).
+
+Co-evolution (attacker drain-rate vs defender window/cap) and a continuous
+policy-gradient learner (`aegis.env` + `aegis.agents`, `python3 -m aegis train`)
+are implemented. Remaining:
+
+5. Forked-mainnet variants (flash-loan price manipulation against a real DEX
+   pair at a pinned block) and an ERC4626 share-inflation class.
+6. Scenario — honeypot/canary tripwire (decoy target whose first touch trips the
+   breaker before the real vault is reachable).
+7. A vectorized scorer (an `anvil` pool / parallel `forge`) for RL throughput.
+8. Hosted leaderboard (Cloudflare Workers + D1) for submissions and trajectory
+   capture — the compounding dataset asset.
