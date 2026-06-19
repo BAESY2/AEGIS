@@ -89,6 +89,17 @@ def _behavioral_family() -> list[DefenseConfig]:
     ]
 
 
+def _owner_only_family() -> list[DefenseConfig]:
+    return [
+        DefenseConfig(
+            family="identity",
+            label="OwnerOnly (authorization invariant)",
+            env={"AEGIS_DEF": "owneronly"},
+            structural=True,
+        )
+    ]
+
+
 def _fixed_anchor_family() -> list[DefenseConfig]:
     return [
         DefenseConfig(
@@ -155,6 +166,29 @@ SCENARIOS: dict[str, Scenario] = {
         families={
             "fixed-anchor": _fixed_anchor_family(),
             "lagged-oracle": _lagged_oracle_family(),
+        },
+    ),
+    "access": Scenario(
+        id="03",
+        key="access",
+        title="Broken access control",
+        summary=(
+            "A treasury whose privileged adminWithdraw is missing its access "
+            "check — the single most common cause of real on-chain losses. A "
+            "value/rate cap can slow a greedy drain but a patient attacker bleeds "
+            "under it (and the cap false-positives a large legitimate admin op); "
+            "an identity invariant ('only the admin may call') stops every "
+            "unauthorized drain at any pace with zero false positives."
+        ),
+        match_test="test_matchup03",
+        json_file="matchup03.json",
+        attacker_knob="AEGIS_TAKE",
+        attacker_grid=[2, 3, 4, 5, 7, 11],
+        benign_total=4,
+        static_env={"AEGIS_HORIZON": 12},
+        families={
+            "rate-based": _rate_family(),
+            "identity": _owner_only_family(),
         },
     ),
 }

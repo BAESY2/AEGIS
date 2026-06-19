@@ -1,5 +1,5 @@
 # Aegis — common tasks
-.PHONY: install build test fmt learn coevolve frontier oracle generalize clean
+.PHONY: install build test fmt bench leaderboard learn coevolve frontier oracle generalize clean
 
 install:
 	forge install foundry-rs/forge-std --no-commit || true
@@ -12,6 +12,16 @@ test:
 
 fmt:
 	forge fmt
+
+# unified benchmark across ALL registered scenarios: ranks every defense and
+# runs the train/test generalization study, writing scoring/leaderboard.json
+# and the published LEADERBOARD.md.
+bench:
+	cd aegis-gym && python3 -m aegis bench
+
+# print the leaderboard for all scenarios (no file output)
+leaderboard:
+	cd aegis-gym && python3 -m aegis leaderboard
 
 # single-agent learning demo (discovers the optimal rate cap)
 learn:
@@ -34,4 +44,4 @@ generalize:
 	cd aegis-gym && python3 generalize.py
 
 clean:
-	forge clean && rm -f scoring/run.json scoring/matchup.json scoring/matchup02.json scoring/results.json
+	forge clean && rm -f scoring/run.json scoring/matchup.json scoring/matchup02.json scoring/matchup03.json scoring/results.json

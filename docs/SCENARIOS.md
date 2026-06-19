@@ -35,8 +35,25 @@ horizon when the attack is gradual.
 - Put measurement in `test/base/<Name>Scenario.sol` (an abstract `is Test`).
 - A static scoreboard `test/<Name>.t.sol` with asserts (must include a baseline
   proving the undefended target is exploitable).
-- An env-driven entry in `Matchup.t.sol` (or a sibling) so `aegis-gym` can score
-  arbitrary (defense, attacker) pairs.
+- An env-driven entry in `Matchup.t.sol` (or a sibling, e.g. `Matchup03.t.sol`)
+  that reads `AEGIS_*` knobs and writes `scoring/<matchupNN>.json` so the gym can
+  score arbitrary (defense, attacker) pairs.
+
+## Register it in the benchmark
+
+Add one `Scenario(...)` entry to `aegis-gym/aegis/registry.py`: point it at your
+`--match-test` and JSON file, declare the attacker knob + grid, the benign-suite
+size, and your defense families (mark invariant-based families `structural=True`).
+That single entry wires your scenario into **everything** automatically — the
+ranked leaderboard (`aegis bench`), the train/test generalization study, and the
+co-evolution arms race — with no further code. Verify with:
+
+```bash
+cd aegis-gym
+python3 -m aegis score <key> <defense-substring> <attacker>   # one matchup
+python3 -m aegis leaderboard <key>                            # the ranking
+python3 -m aegis generalize <key>                             # train/test gap
+```
 
 ## Checklist
 
