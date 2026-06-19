@@ -79,6 +79,7 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("list", help="list registered scenarios")
     sub.add_parser("bench", help="full leaderboard + generalization -> JSON + LEADERBOARD.md")
+    sub.add_parser("verify", help="assert the benchmark invariants on the EVM (CI gate)")
     for name in ("leaderboard", "generalize", "coevolve"):
         p = sub.add_parser(name)
         p.add_argument("scenario", nargs="?", default="all")
@@ -114,6 +115,28 @@ def main(argv: list[str] | None = None) -> int:
             _print_generalization(sc, cache)
         print(f"\nwrote {jp.relative_to(report.ROOT)} and {mp.relative_to(report.ROOT)}")
         return 0
+
+    if args.cmd == "verify":
+        ok = True
+        for sc in registry.all_scenarios():
+            rows = analysis.leaderboard(sc, cache)
+            top = rows[0]
+            if not top.structural:
+                print(f"FAIL {sc.key}: top defense '{top.label}' is not structural")
+                ok = False
+            gen_rows, train, test = analysis.generalization(sc, cache)
+            for r in gen_rows:
+                if r.structural and abs(r.gap) > 0.01:
+                    print(f"FAIL {sc.key}: structural family '{r.family}' did not generalize (gap {r.gap})")
+                    ok = False
+                if not r.structural and r.gap < 0.5:
+                    print(f"FAIL {sc.key}: threshold family '{r.family}' did not overfit (gap {r.gap})")
+                    ok = False
+            if ok:
+                print(f"OK   {sc.key}: structural defense '{top.label}' tops the board; "
+                      f"structural generalizes, threshold overfits")
+        print("\nbenchmark invariants:", "PASS" if ok else "FAIL")
+        return 0 if ok else 1
 
     if args.cmd == "leaderboard":
         for sc in _scenarios(args.scenario):

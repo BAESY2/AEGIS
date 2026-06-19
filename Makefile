@@ -1,5 +1,5 @@
 # Aegis — common tasks
-.PHONY: install build test fmt bench leaderboard rl-train learn coevolve frontier oracle generalize clean
+.PHONY: install build test fmt bench leaderboard verify rl-train learn coevolve frontier oracle generalize clean
 
 install:
 	forge install foundry-rs/forge-std --no-commit || true
@@ -22,6 +22,11 @@ bench:
 # print the leaderboard for all scenarios (no file output)
 leaderboard:
 	cd aegis-gym && python3 -m aegis leaderboard
+
+# assert the benchmark invariants on the EVM (structural tops every scenario and
+# generalizes; threshold/rate defenses overfit) — the CI "living benchmark" gate
+verify:
+	cd aegis-gym && python3 -m aegis verify
 
 # continuous policy-gradient agent: learns a robust (window, cap) breaker from
 # the verifiable worst-case reward (writes scoring/training.json)
