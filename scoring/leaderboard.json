@@ -1,0 +1,266 @@
+{
+  "generated_utc": "2026-06-19T16:51:28Z",
+  "scenarios": {
+    "reentrancy": {
+      "id": "01",
+      "title": "Reentrancy drain",
+      "summary": "A reentrancy-drainable ETH vault. The attacker re-enters withdraw() to drain funds; a patient attacker bleeds slowly to evade a per-block rate limit. Rate caps overfit to a drain rate; a per-address per-tx balance invariant stops every rate.",
+      "attacker_knob": "AEGIS_TAKE",
+      "attacker_grid": [
+        2,
+        3,
+        4,
+        5,
+        7,
+        11
+      ],
+      "benign_total": 4,
+      "leaderboard": [
+        {
+          "scenario": "reentrancy",
+          "family": "behavioral",
+          "label": "PerAddressInvariant (per-tx balance)",
+          "structural": true,
+          "worst_case_saved": 1.0,
+          "worst_case_reward": 1.0,
+          "mean_saved": 1.0,
+          "fp": 0,
+          "benign_total": 4
+        },
+        {
+          "scenario": "reentrancy",
+          "family": "rate-based",
+          "label": "WindowedRateLimit(w=8, cap=3)",
+          "structural": false,
+          "worst_case_saved": 0.5,
+          "worst_case_reward": 0.25,
+          "mean_saved": 0.8666666666666667,
+          "fp": 1,
+          "benign_total": 4
+        },
+        {
+          "scenario": "reentrancy",
+          "family": "rate-based",
+          "label": "WindowedRateLimit(w=10, cap=3)",
+          "structural": false,
+          "worst_case_saved": 0.5,
+          "worst_case_reward": 0.25,
+          "mean_saved": 0.8666666666666667,
+          "fp": 1,
+          "benign_total": 4
+        },
+        {
+          "scenario": "reentrancy",
+          "family": "rate-based",
+          "label": "WindowedRateLimit(w=1, cap=5)",
+          "structural": false,
+          "worst_case_saved": 0.0,
+          "worst_case_reward": 0.0,
+          "mean_saved": 0.3333333333333333,
+          "fp": 0,
+          "benign_total": 4
+        },
+        {
+          "scenario": "reentrancy",
+          "family": "rate-based",
+          "label": "WindowedRateLimit(w=1, cap=8)",
+          "structural": false,
+          "worst_case_saved": 0.0,
+          "worst_case_reward": 0.0,
+          "mean_saved": 0.16666666666666666,
+          "fp": 0,
+          "benign_total": 4
+        },
+        {
+          "scenario": "reentrancy",
+          "family": "rate-based",
+          "label": "WindowedRateLimit(w=4, cap=5)",
+          "structural": false,
+          "worst_case_saved": 0.0,
+          "worst_case_reward": 0.0,
+          "mean_saved": 0.3333333333333333,
+          "fp": 0,
+          "benign_total": 4
+        },
+        {
+          "scenario": "reentrancy",
+          "family": "rate-based",
+          "label": "WindowedRateLimit(w=6, cap=4)",
+          "structural": false,
+          "worst_case_saved": 0.0,
+          "worst_case_reward": 0.0,
+          "mean_saved": 0.5499999999999999,
+          "fp": 0,
+          "benign_total": 4
+        }
+      ],
+      "generalization": {
+        "train": [
+          5,
+          7,
+          11
+        ],
+        "test": [
+          2,
+          3,
+          4
+        ],
+        "rows": [
+          {
+            "scenario": "reentrancy",
+            "family": "rate-based",
+            "trained_label": "WindowedRateLimit(w=6, cap=4)",
+            "structural": false,
+            "train": 1.0,
+            "test": 0.0,
+            "gap": 1.0
+          },
+          {
+            "scenario": "reentrancy",
+            "family": "behavioral",
+            "trained_label": "PerAddressInvariant (per-tx balance)",
+            "structural": true,
+            "train": 1.0,
+            "test": 1.0,
+            "gap": 0.0
+          }
+        ]
+      }
+    },
+    "oracle": {
+      "id": "02",
+      "title": "Oracle / price manipulation",
+      "summary": "A lending pool values collateral at an AMM spot price. The attacker pumps spot within one transaction and over-borrows. A fixed price anchor cannot tell a small same-block pump from organic drift; a one-block-lagged oracle stops any single-block manipulation.",
+      "attacker_knob": "AEGIS_PUMP",
+      "attacker_grid": [
+        2,
+        3,
+        5,
+        10,
+        100
+      ],
+      "benign_total": 2,
+      "leaderboard": [
+        {
+          "scenario": "oracle",
+          "family": "lagged-oracle",
+          "label": "LaggedOracleGuard(<= 300bps)",
+          "structural": true,
+          "worst_case_saved": 1.0,
+          "worst_case_reward": 1.0,
+          "mean_saved": 1.0,
+          "fp": 0,
+          "benign_total": 2
+        },
+        {
+          "scenario": "oracle",
+          "family": "fixed-anchor",
+          "label": "PriceDeviationGuard(<= 300bps)",
+          "structural": false,
+          "worst_case_saved": 1.0,
+          "worst_case_reward": 0.5,
+          "mean_saved": 1.0,
+          "fp": 1,
+          "benign_total": 2
+        },
+        {
+          "scenario": "oracle",
+          "family": "fixed-anchor",
+          "label": "PriceDeviationGuard(<= 609bps)",
+          "structural": false,
+          "worst_case_saved": 0.0,
+          "worst_case_reward": 0.0,
+          "mean_saved": 0.6,
+          "fp": 0,
+          "benign_total": 2
+        },
+        {
+          "scenario": "oracle",
+          "family": "fixed-anchor",
+          "label": "PriceDeviationGuard(<= 800bps)",
+          "structural": false,
+          "worst_case_saved": 0.0,
+          "worst_case_reward": 0.0,
+          "mean_saved": 0.6,
+          "fp": 0,
+          "benign_total": 2
+        },
+        {
+          "scenario": "oracle",
+          "family": "fixed-anchor",
+          "label": "PriceDeviationGuard(<= 1200bps)",
+          "structural": false,
+          "worst_case_saved": 0.0,
+          "worst_case_reward": 0.0,
+          "mean_saved": 0.4,
+          "fp": 0,
+          "benign_total": 2
+        },
+        {
+          "scenario": "oracle",
+          "family": "lagged-oracle",
+          "label": "LaggedOracleGuard(<= 500bps)",
+          "structural": true,
+          "worst_case_saved": 0.0,
+          "worst_case_reward": 0.0,
+          "mean_saved": 0.8,
+          "fp": 0,
+          "benign_total": 2
+        },
+        {
+          "scenario": "oracle",
+          "family": "lagged-oracle",
+          "label": "LaggedOracleGuard(<= 800bps)",
+          "structural": true,
+          "worst_case_saved": 0.0,
+          "worst_case_reward": 0.0,
+          "mean_saved": 0.6,
+          "fp": 0,
+          "benign_total": 2
+        },
+        {
+          "scenario": "oracle",
+          "family": "fixed-anchor",
+          "label": "PriceDeviationGuard(<= 500bps)",
+          "structural": false,
+          "worst_case_saved": 0.0,
+          "worst_case_reward": -0.5,
+          "mean_saved": 0.8,
+          "fp": 1,
+          "benign_total": 2
+        }
+      ],
+      "generalization": {
+        "train": [
+          5,
+          10,
+          100
+        ],
+        "test": [
+          2,
+          3
+        ],
+        "rows": [
+          {
+            "scenario": "oracle",
+            "family": "fixed-anchor",
+            "trained_label": "PriceDeviationGuard(<= 609bps)",
+            "structural": false,
+            "train": 1.0,
+            "test": 0.0,
+            "gap": 1.0
+          },
+          {
+            "scenario": "oracle",
+            "family": "lagged-oracle",
+            "trained_label": "LaggedOracleGuard(<= 300bps)",
+            "structural": true,
+            "train": 1.0,
+            "test": 1.0,
+            "gap": 0.0
+          }
+        ]
+      }
+    }
+  }
+}
