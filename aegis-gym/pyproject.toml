@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aegis-gym"
+version = "0.2.0"
+description = "A verifiable RL environment and benchmark for smart-contract defense"
+readme = "../README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Aegis contributors" }]
+keywords = ["ethereum", "evm", "security", "reinforcement-learning", "benchmark", "defi"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Security",
+]
+# Core is intentionally dependency-free: the only runtime requirement is a
+# working `forge` (Foundry) on PATH. Python orchestrates; the EVM verifies.
+dependencies = []
+
+[project.optional-dependencies]
+gym = ["gymnasium>=0.29"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+aegis = "aegis.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/baesy2/aegis"
+Repository = "https://github.com/baesy2/aegis"
+
+[tool.setuptools]
+packages = ["aegis"]
