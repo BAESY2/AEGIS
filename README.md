@@ -2,41 +2,45 @@
 
 **A training ground for swarms of self-evolving smart-contract defense agents.**
 
+[![CI](https://github.com/baesy2/aegis/actions/workflows/ci.yml/badge.svg)](https://github.com/baesy2/aegis/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Solidity](https://img.shields.io/badge/Solidity-0.8.24-363636.svg)](https://soliditylang.org/)
+[![Built with Foundry](https://img.shields.io/badge/Built%20with-Foundry-orange.svg)](https://getfoundry.sh/)
+
 > A single giant shield — an "Iron Dome" for DeFi — is expensive, centralized, and
 > already being built by well-funded teams (Chainalysis Hexagate, Hypernative,
 > SphereX). Aegis takes the other path: instead of one costly shield, train many
 > cheap defense agents — "drones" — that learn by fighting attackers in a
-> verifiable simulation, and prove themselves before they ever fly over real funds.
+> **verifiable simulation**, and prove themselves before they ever fly over real funds.
 
-## Vision
-
-On-chain attacks unfold in seconds and drain millions. The industry's answer is a
-big, expensive, real-time shield bolted onto each protocol. That shield is the
-*gun*. Aegis builds the *firing range*: the open, verifiable environment where
-defense agents are trained, made to fight evolving attackers, and ranked by an
+Aegis is the **SWE-bench of on-chain security**: an open, runnable environment
+where a smart-contract defense is *trained* and *objectively ranked* by an
 outcome the EVM itself certifies — funds saved, with no human labels.
-
-The bet: defense is a learning problem, learning needs an environment, and the
-environment that everyone's defenses train against becomes the most valuable layer
-in the stack — because every match played in it leaves behind attack/defense data
-that compounds. Cheap, self-evolving, swarming defense — drones, not one Dome.
-
-This is an early but working system. The sections below are honest about what is
-proven today versus what is on the roadmap.
 
 ---
 
-## Project status
+## TL;DR — the result that matters
 
-Past proof-of-concept: a verifiable environment with **two vulnerability classes**
-(reentrancy, oracle manipulation) and **reproducible results** — co-evolution
-beats single-attacker training (worst-case funds saved 0.00 -> 0.50), in both
-classes a stronger defense (behavioral invariant / lagged oracle) crosses the
-floor that threshold-based defenses hit (1.00, zero false positives), and under a
-train/test split those structural defenses **generalize to unseen attackers**
-(gap 0.00) while threshold/rate defenses **overfit** (gap 1.00). Not yet a large-scale platform; see
-[docs/ROADMAP.md](./docs/ROADMAP.md). Paper draft: [docs/PAPER.md](./docs/PAPER.md).
-Contributing: [docs/SCENARIOS.md](./docs/SCENARIOS.md), [CONTRIBUTING.md](./CONTRIBUTING.md).
+The sharpest question a defense benchmark can answer is **generalization**: a
+defense tuned against the attacks you've *seen* — does it hold against the ones
+you *haven't*? Aegis makes that measurable, and the answer is consistent across
+**three structurally different vulnerability classes**:
+
+| Scenario | Defense family | Train | **Test (unseen)** | Gap |
+|----------|----------------|:-----:|:-----------------:|:---:|
+| 01 Reentrancy | rate / threshold | 1.00 | **0.00** | **1.00** ❌ overfits |
+| 01 Reentrancy | **structural** (per-addr invariant) | 1.00 | **1.00** | **0.00** ✅ generalizes |
+| 02 Oracle manip. | fixed price anchor | 1.00 | **0.00** | **1.00** ❌ overfits |
+| 02 Oracle manip. | **structural** (lagged oracle) | 1.00 | **1.00** | **0.00** ✅ generalizes |
+| 03 Access control | rate / threshold | 1.00 | **0.00** | **1.00** ❌ overfits |
+| 03 Access control | **structural** (auth invariant) | 1.00 | **1.00** | **0.00** ✅ generalizes |
+
+> Threshold/rate defenses score perfectly on the attackers they were tuned on and
+> **collapse to zero** on held-out ones. Structural defenses — which enforce an
+> *invariant* rather than fit a numeric boundary — **transfer perfectly**. The
+> environment cleanly separates defenses that overfit from defenses that hold.
+
+Reproduce it in one command: `cd aegis-gym && python3 -m aegis generalize`.
 
 ## Why this exists
 
@@ -44,23 +48,65 @@ Contributing: [docs/SCENARIOS.md](./docs/SCENARIOS.md), [CONTRIBUTING.md](./CONT
    Reinforcement learning with *verifiable rewards* (math, code) is the most
    sought-after training signal in AI today. Smart-contract defense is natively
    verifiable: an exploit either drains funds on a forked chain, or it does not.
-   That binary, execution-grounded outcome is a clean reward.
+   That binary, execution-grounded outcome is a clean, ungameable reward.
 
 2. **No open standard exists.** Monitoring vendors are closed SaaS. Academic
    work (EVMbench, SmartCoder-R1) is fragmented and offense-leaning. There is no
-   shared, runnable, defense-oriented environment — the SWE-bench of on-chain
-   security. Aegis aims to be it.
+   shared, runnable, defense-oriented environment. Aegis aims to be it.
 
 3. **The asset compounds.** Every defense submitted and every scenario added
    accumulates a corpus of attack/defense trajectories — the durable, hard-to-
    replicate moat, owned by the range rather than any single defender.
+
+## Quickstart
+
+```bash
+# 1. install Foundry (the EVM scorer) and the test library
+curl -L https://foundry.paradigm.xyz | bash && foundryup
+forge install foundry-rs/forge-std
+
+# 2. run the scenarios + static scoreboards (all green)
+forge test
+
+# 3. drive the whole benchmark from one CLI
+cd aegis-gym
+python3 -m aegis list                 # registered vulnerability classes
+python3 -m aegis bench                 # full leaderboard + generalization -> LEADERBOARD.md
+python3 -m aegis generalize            # the headline train/test study
+python3 -m aegis coevolve reentrancy   # an attacker/defender arms race
+python3 -m aegis train reentrancy      # a policy-gradient agent learns a defense
+python3 -m aegis score access owneronly 11   # score one matchup on the EVM
+```
+
+No Python dependencies are required — the core only needs `forge` on your PATH.
+Everything is also exposed as `make` targets (`make bench`, `make generalize`,
+`make rl-train`, …).
+
+## The benchmark today
+
+Three vulnerability classes, each with a vulnerable target, a parameterized
+exploit, a legitimate-traffic suite (including an adversarial-looking-but-honest
+"whale"), and competing defense families:
+
+| # | Class | The bug | Threshold defense (overfits) | Structural defense (generalizes) |
+|---|-------|---------|------------------------------|----------------------------------|
+| 01 | **Reentrancy** | interaction-before-effects drain | windowed outflow rate limit | per-address, per-tx balance invariant (EIP-1153) |
+| 02 | **Oracle / price manipulation** | collateral valued at AMM spot price | fixed price-deviation anchor | one-block-lagged oracle (mini-TWAP) |
+| 03 | **Broken access control** | privileged function missing its auth check | value/rate cap on withdrawals | identity invariant ("only the admin may call") |
+
+The full, **auto-generated** ranking lives in [LEADERBOARD.md](./LEADERBOARD.md)
+(regenerate with `aegis bench`). Each defense is ranked by **worst-case reward**
+— the minimum, over the entire attacker grid, of `funds_saved − false_positive_rate`
+— because a production defense is only as good as its worst day against any
+attacker in the family. The structural defense tops every scenario.
 
 ## The core abstraction
 
 A **Scenario** = a vulnerable `Target`, a verified exploit `Attack`, and a
 `Benign` traffic suite.
 
-A **Defense** implements one method:
+A **Defense** implements exactly one method — a single-line firewall hook a
+protocol drops in at the top of a sensitive function:
 
 ```solidity
 interface IDefense {
@@ -69,96 +115,98 @@ interface IDefense {
 }
 ```
 
-A protocol integrates a defense with a single firewall-hook line at the top of a
-sensitive function. The defense decides allow/block per call.
-
 The **Reward** is execution-derived and deliberately not gameable:
 
 ```
-reward = W_BLOCK . attackBlocked  -  W_FP . falsePositiveRate        (range: -1 ... +1)
+reward = W_BLOCK · fundsSaved  −  W_FP · falsePositiveRate        (range −1 … +1)
 ```
 
-Blocking everything earns the block reward but pays the full false-positive
+Blocking everything earns the protection term but pays the full false-positive
 penalty — netting zero, the same as doing nothing. Positive scores require
-*precision*: stop the exploit while keeping legitimate users alive. That is the
-real problem, made measurable.
+**precision**: stop the exploit while keeping legitimate users alive. That is
+the real production constraint (a paused protocol is itself an outage), made
+measurable.
 
-## Quickstart
+## Defense is a learning problem — watch an agent learn one
 
-```bash
-curl -L https://foundry.paradigm.xyz | bash && foundryup   # install Foundry
-forge test -vv                                              # run the scorer
-```
-
-### Reference scoreboard — Scenario 01 (reentrancy)
-
-Produced directly by `forge test` in this repo:
-
-| Defense    | Attack blocked | False positives | Reward |
-|------------|:--------------:|:---------------:|:------:|
-| NoDefense  | no             | 0 / 3           | 0.0    |
-| Paranoid   | yes            | 3 / 3           | 0.0    |
-| RateLimit  | yes            | 0 / 3           | **1.0** |
-
-The do-nothing baseline and the block-everything strawman both net zero; only a
-precise circuit-breaker scores. A machine-readable leaderboard is written to
-`scoring/results.json`.
-
-### Learning demo — the defense tunes itself
-
-The scoreboard above uses a hand-picked cap (2 ether) that scores only 0.75 — it
-false-positives a legitimate whale. `aegis-gym/` removes the hand-tuning: an agent
-is told nothing about reentrancy or the right answer, and only proposes a cap,
-observes the on-chain reward, and updates.
+`aegis train` runs a **policy-gradient agent** (a diagonal-Gaussian REINFORCE,
+pure Python — no numpy/torch) over a *continuous* circuit-breaker configuration.
+Each step is scored on the EVM against the **entire** attacker grid and the agent
+optimizes the **worst-case** reward, so it is pushed toward a *robust* defense,
+not one tuned to a single attacker:
 
 ```
-forge test                      # sanity-check the scenario
-cd aegis-gym && python3 train.py # watch the agent learn
-```
-
-```
- ep  mode     cap  reward
-  1  explore    2    0.75
-  2  explore    0    0.00
-  3  explore    8    1.00   <- discovers the plateau
+ ep  window   cap   reward  sigma   best
+  1      10    11     0.00   2.91   (10, 11)
+  6       8     4     0.30   2.48   (8, 4)
  ...
- 18  exploit    8    1.00
-learned policy: cap = 8 eth (Q=1.00)
+ -> learned robust policy: window=9 cap=1 -> worst-case reward 0.75
 ```
 
-It converges to a cap in the optimal [5, 10] band: the reentrancy drain is
-stopped AND every legitimate user, whale included, gets through — discovered, not
-configured. The bandit is deliberately trivial; what matters is that the reward
-is real, execution-grounded, and label-free, so the same loop extends to richer
-defense parameter spaces and learned classifiers.
+From the verifiable reward alone, continuous search **beats the hand-picked grid**
+(whose best worst-case reward is 0.25) — yet it never reaches 1.0, because any
+rate cap that stops the patient drain also blocks the legitimate whale. Switch to
+the structural family and the agent trivially scores 1.0. **The environment
+teaches the same lesson the benchmark proves: structure beats thresholds.**
+
+(The original epsilon-greedy bandit demo — an agent discovering the optimal cap
+from scratch — is still here: `python3 aegis-gym/train.py`.)
+
+## Add your own defense in ~5 minutes
+
+1. Implement `IDefense` in `src/defenses/YourDefense.sol`.
+2. Point a target's hook at it (or reuse a scenario's env-driven matchup).
+3. Score it on the EVM:
+   ```bash
+   cd aegis-gym && python3 -m aegis score reentrancy yourdefense 2
+   ```
+
+Adding a whole new **vulnerability class** is one `Scenario(...)` entry in
+`aegis-gym/aegis/registry.py` plus its Solidity target/exploit/defenses — and it
+then flows into the leaderboard, the generalization study, and the arms race
+automatically. See [docs/SCENARIOS.md](./docs/SCENARIOS.md).
 
 ## Layout
 
 ```
 src/
-  interfaces/IDefense.sol          # the one interface every defense implements
-  lib/Reward.sol                   # the verifiable reward function
-  scenarios/reentrancy/            # Scenario 01: target + canonical exploit
-  defenses/                        # reference defenses (RateLimit, Paranoid)
-test/Reentrancy.t.sol              # the scorer (runs attack + benign, emits reward)
-scoring/                           # machine-readable leaderboard output
-docs/DESIGN.md                     # architecture, reward design, threat model
+  interfaces/IDefense.sol             # the one interface every defense implements
+  lib/Reward.sol                      # the verifiable reward function
+  scenarios/reentrancy|oracle|access  # targets + canonical exploits
+  defenses/                           # reference defenses (rate, behavioral, oracle, identity)
+test/
+  base/*Scenario.sol                  # measurement cores
+  *.t.sol                             # static scoreboards (assert the frontier)
+  Matchup*.t.sol                      # env-driven scorers the gym calls
+aegis-gym/
+  aegis/                              # the benchmark package: registry, analysis, env, agents, CLI
+  tests/                              # forge-free unit tests
+  train.py, coevolve.py, ...          # standalone paper-reproduction scripts
+scoring/                              # machine-readable outputs (leaderboard.json, ...)
+docs/                                 # PAPER, DESIGN, ROADMAP, SCENARIOS
+LEADERBOARD.md                        # auto-generated ranking
 ```
+
+## Project status
+
+Past proof-of-concept: a verifiable environment with **three vulnerability
+classes**, a unified benchmark/leaderboard, a continuous policy-gradient learner,
+and reproducible results — co-evolution beats single-attacker training (worst-case
+funds saved 0.00 → 0.50), structural defenses cross the floor threshold defenses
+hit (perfect reward, zero false positives), and under a train/test split those
+structural defenses **generalize to unseen attackers (gap 0.00)** while
+threshold/rate defenses **overfit (gap 1.00)** — in every class. Not yet a
+large-scale hosted platform; see [docs/ROADMAP.md](./docs/ROADMAP.md). Paper
+draft: [docs/PAPER.md](./docs/PAPER.md). Design: [docs/DESIGN.md](./docs/DESIGN.md).
 
 ## Roadmap
 
-- **Scenarios:** `01 reentrancy` (done) -> `02 flash-loan price manipulation` ->
-  `03 oracle manipulation` -> `04 governance takeover` -> `05 honeypot/canary
-  tripwire` (decoy target that trips a circuit breaker before real funds move).
-  Scenarios 02-04 run against forked mainnet state.
-- **Gym wrapper (done):** `aegis-gym/` exposes a Python `step()` over the Foundry
-  scorer; a minimal epsilon-greedy agent **learns the optimal defense cap from
-  verifiable reward alone** (see below).
-- **Co-evolution (done):** an adaptive attacker (drain rate) and defender (window,
-  cap) escalate over the verifiable reward. A defense tuned only on the fast
-  exploit saves **0%** worst-case against patient attackers; the co-evolved
-  defense saves **50%** — see [docs/PAPER.md](./docs/PAPER.md). Run it with
-  `cd aegis-gym && python3 coevolve.py`.
+- **Scenarios:** `01 reentrancy`, `02 oracle manipulation`, `03 access control`
+  (done) → `04 ERC4626 share-inflation` → `05 governance takeover` →
+  `06 honeypot/canary tripwire`. Later scenarios run against forked mainnet state.
+- **Learning (done):** a Gymnasium-style env + a continuous policy-gradient agent
+  that learns a robust defense from verifiable reward alone.
+- **Co-evolution (done):** adaptive attacker/defender arms race over the reward.
 - **Hosted leaderboard:** submit a defense, get scored, climb the board — and the
   submitted trajectories accumulate as the dataset.
 
@@ -166,8 +214,9 @@ docs/DESIGN.md                     # architecture, reward design, threat model
 
 Aegis is **defensive**. Targets and exploits are curated, well-known vulnerability
 classes used to *train and measure defenses*. It is not a tool for discovering or
-launching attacks against live systems, and it does not perform attribution,
-"hack-back," or any offensive action. Contributions must stay within that scope.
+launching attacks against live systems, performs no attribution or "hack-back,"
+and confines any adaptive attacker to simulation. Contributions must stay within
+that scope — see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
 
