@@ -1,0 +1,864 @@
+{
+  "scenario": "reentrancy",
+  "episodes": 60,
+  "seed": 0,
+  "history": [
+    {
+      "episode": 1,
+      "action": [
+        9,
+        2
+      ],
+      "reward": 0.45,
+      "best_action": [
+        9,
+        2
+      ],
+      "best_reward": 0.45,
+      "sigma": 2.96
+    },
+    {
+      "episode": 2,
+      "action": [
+        5,
+        7
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        2
+      ],
+      "best_reward": 0.45,
+      "sigma": 2.91
+    },
+    {
+      "episode": 3,
+      "action": [
+        4,
+        6
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        2
+      ],
+      "best_reward": 0.45,
+      "sigma": 2.87
+    },
+    {
+      "episode": 4,
+      "action": [
+        7,
+        4
+      ],
+      "reward": 0.3,
+      "best_action": [
+        9,
+        2
+      ],
+      "best_reward": 0.45,
+      "sigma": 2.83
+    },
+    {
+      "episode": 5,
+      "action": [
+        3,
+        7
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        2
+      ],
+      "best_reward": 0.45,
+      "sigma": 2.78
+    },
+    {
+      "episode": 6,
+      "action": [
+        9,
+        5
+      ],
+      "reward": 0.1,
+      "best_action": [
+        9,
+        2
+      ],
+      "best_reward": 0.45,
+      "sigma": 2.74
+    },
+    {
+      "episode": 7,
+      "action": [
+        6,
+        11
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        2
+      ],
+      "best_reward": 0.45,
+      "sigma": 2.7
+    },
+    {
+      "episode": 8,
+      "action": [
+        5,
+        5
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        2
+      ],
+      "best_reward": 0.45,
+      "sigma": 2.65
+    },
+    {
+      "episode": 9,
+      "action": [
+        12,
+        2
+      ],
+      "reward": 0.45,
+      "best_action": [
+        9,
+        2
+      ],
+      "best_reward": 0.45,
+      "sigma": 2.61
+    },
+    {
+      "episode": 10,
+      "action": [
+        9,
+        1
+      ],
+      "reward": 0.75,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 2.57
+    },
+    {
+      "episode": 11,
+      "action": [
+        5,
+        10
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 2.52
+    },
+    {
+      "episode": 12,
+      "action": [
+        10,
+        4
+      ],
+      "reward": 0.3,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 2.48
+    },
+    {
+      "episode": 13,
+      "action": [
+        6,
+        6
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 2.44
+    },
+    {
+      "episode": 14,
+      "action": [
+        4,
+        7
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 2.39
+    },
+    {
+      "episode": 15,
+      "action": [
+        12,
+        3
+      ],
+      "reward": 0.25,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 2.35
+    },
+    {
+      "episode": 16,
+      "action": [
+        2,
+        7
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 2.31
+    },
+    {
+      "episode": 17,
+      "action": [
+        7,
+        10
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 2.26
+    },
+    {
+      "episode": 18,
+      "action": [
+        7,
+        6
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 2.22
+    },
+    {
+      "episode": 19,
+      "action": [
+        7,
+        4
+      ],
+      "reward": 0.3,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 2.18
+    },
+    {
+      "episode": 20,
+      "action": [
+        8,
+        3
+      ],
+      "reward": 0.25,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 2.13
+    },
+    {
+      "episode": 21,
+      "action": [
+        9,
+        6
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 2.09
+    },
+    {
+      "episode": 22,
+      "action": [
+        8,
+        5
+      ],
+      "reward": 0.1,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 2.05
+    },
+    {
+      "episode": 23,
+      "action": [
+        5,
+        9
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 2.0
+    },
+    {
+      "episode": 24,
+      "action": [
+        8,
+        8
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.96
+    },
+    {
+      "episode": 25,
+      "action": [
+        7,
+        11
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.92
+    },
+    {
+      "episode": 26,
+      "action": [
+        8,
+        4
+      ],
+      "reward": 0.3,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.87
+    },
+    {
+      "episode": 27,
+      "action": [
+        8,
+        6
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.83
+    },
+    {
+      "episode": 28,
+      "action": [
+        3,
+        5
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.79
+    },
+    {
+      "episode": 29,
+      "action": [
+        9,
+        7
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.74
+    },
+    {
+      "episode": 30,
+      "action": [
+        6,
+        4
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.7
+    },
+    {
+      "episode": 31,
+      "action": [
+        8,
+        4
+      ],
+      "reward": 0.3,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.66
+    },
+    {
+      "episode": 32,
+      "action": [
+        9,
+        5
+      ],
+      "reward": 0.1,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.61
+    },
+    {
+      "episode": 33,
+      "action": [
+        6,
+        5
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.57
+    },
+    {
+      "episode": 34,
+      "action": [
+        6,
+        5
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.53
+    },
+    {
+      "episode": 35,
+      "action": [
+        6,
+        5
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.48
+    },
+    {
+      "episode": 36,
+      "action": [
+        7,
+        6
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.44
+    },
+    {
+      "episode": 37,
+      "action": [
+        6,
+        4
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.4
+    },
+    {
+      "episode": 38,
+      "action": [
+        7,
+        6
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.35
+    },
+    {
+      "episode": 39,
+      "action": [
+        7,
+        3
+      ],
+      "reward": 0.25,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.31
+    },
+    {
+      "episode": 40,
+      "action": [
+        9,
+        4
+      ],
+      "reward": 0.3,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.27
+    },
+    {
+      "episode": 41,
+      "action": [
+        9,
+        4
+      ],
+      "reward": 0.3,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.22
+    },
+    {
+      "episode": 42,
+      "action": [
+        6,
+        5
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.18
+    },
+    {
+      "episode": 43,
+      "action": [
+        7,
+        4
+      ],
+      "reward": 0.3,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.14
+    },
+    {
+      "episode": 44,
+      "action": [
+        8,
+        3
+      ],
+      "reward": 0.25,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.09
+    },
+    {
+      "episode": 45,
+      "action": [
+        9,
+        4
+      ],
+      "reward": 0.3,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.05
+    },
+    {
+      "episode": 46,
+      "action": [
+        9,
+        5
+      ],
+      "reward": 0.1,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 1.01
+    },
+    {
+      "episode": 47,
+      "action": [
+        6,
+        6
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 0.96
+    },
+    {
+      "episode": 48,
+      "action": [
+        10,
+        5
+      ],
+      "reward": 0.1,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 0.92
+    },
+    {
+      "episode": 49,
+      "action": [
+        8,
+        5
+      ],
+      "reward": 0.1,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 0.88
+    },
+    {
+      "episode": 50,
+      "action": [
+        7,
+        5
+      ],
+      "reward": 0.1,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 0.83
+    },
+    {
+      "episode": 51,
+      "action": [
+        6,
+        4
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 0.79
+    },
+    {
+      "episode": 52,
+      "action": [
+        8,
+        7
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 0.75
+    },
+    {
+      "episode": 53,
+      "action": [
+        8,
+        6
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 0.7
+    },
+    {
+      "episode": 54,
+      "action": [
+        8,
+        5
+      ],
+      "reward": 0.1,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 0.66
+    },
+    {
+      "episode": 55,
+      "action": [
+        8,
+        5
+      ],
+      "reward": 0.1,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 0.62
+    },
+    {
+      "episode": 56,
+      "action": [
+        8,
+        6
+      ],
+      "reward": 0.0,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 0.57
+    },
+    {
+      "episode": 57,
+      "action": [
+        8,
+        5
+      ],
+      "reward": 0.1,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 0.53
+    },
+    {
+      "episode": 58,
+      "action": [
+        8,
+        5
+      ],
+      "reward": 0.1,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 0.49
+    },
+    {
+      "episode": 59,
+      "action": [
+        8,
+        5
+      ],
+      "reward": 0.1,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 0.44
+    },
+    {
+      "episode": 60,
+      "action": [
+        7,
+        5
+      ],
+      "reward": 0.1,
+      "best_action": [
+        9,
+        1
+      ],
+      "best_reward": 0.75,
+      "sigma": 0.4
+    }
+  ],
+  "learned_policy": {
+    "window": 9,
+    "cap": 1
+  },
+  "policy_mean": [
+    7.56,
+    5.08
+  ],
+  "learned_worstcase_reward": 0.75,
+  "learned_per_attacker": {
+    "2": 0.75,
+    "3": 0.75,
+    "4": 0.75,
+    "5": 0.75,
+    "7": 0.75,
+    "11": 0.75
+  }
+}

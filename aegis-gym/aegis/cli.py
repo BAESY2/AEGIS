@@ -88,6 +88,11 @@ def main(argv: list[str] | None = None) -> int:
     ps.add_argument("config_label", help="substring matching a defense label")
     ps.add_argument("attacker", type=int)
 
+    pt = sub.add_parser("train", help="policy-gradient agent learns a robust defense")
+    pt.add_argument("scenario", nargs="?", default="reentrancy")
+    pt.add_argument("--episodes", type=int, default=60)
+    pt.add_argument("--seed", type=int, default=0)
+
     args = parser.parse_args(argv)
     cache = analysis.ScoreCache()
 
@@ -138,6 +143,12 @@ def main(argv: list[str] | None = None) -> int:
         res = sc.score(cfg, args.attacker)
         print(f"scenario={sc.key} defense='{cfg.label}' {sc.attacker_knob}={args.attacker}")
         print(f"  saved={res.saved:.2f}  fp={res.fp}/{res.benign_total}  reward={res.reward:+.2f}")
+        return 0
+
+    if args.cmd == "train":
+        from . import learn
+
+        learn.train(args.scenario, episodes=args.episodes, seed=args.seed)
         return 0
 
     return 1

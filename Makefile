@@ -1,5 +1,5 @@
 # Aegis — common tasks
-.PHONY: install build test fmt bench leaderboard learn coevolve frontier oracle generalize clean
+.PHONY: install build test fmt bench leaderboard rl-train learn coevolve frontier oracle generalize clean
 
 install:
 	forge install foundry-rs/forge-std --no-commit || true
@@ -23,7 +23,12 @@ bench:
 leaderboard:
 	cd aegis-gym && python3 -m aegis leaderboard
 
-# single-agent learning demo (discovers the optimal rate cap)
+# continuous policy-gradient agent: learns a robust (window, cap) breaker from
+# the verifiable worst-case reward (writes scoring/training.json)
+rl-train:
+	cd aegis-gym && python3 -m aegis train reentrancy
+
+# single-agent learning demo (epsilon-greedy bandit discovers the optimal cap)
 learn:
 	cd aegis-gym && python3 train.py
 
