@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="360" viewBox="0 0 900 360" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+  <rect width="900" height="360" fill="#0d1117"/>
+  <text x="450" y="36" fill="#e6edf3" font-size="20" font-weight="700" text-anchor="middle">Aegis — a verifiable training ground for smart-contract defense</text>
+  <text x="450" y="58" fill="#8b949e" font-size="13" text-anchor="middle">the EVM is the verifier: reward = funds saved − false-positive rate</text>
+
+  <!-- Scenario box -->
+  <rect x="30" y="92" width="220" height="170" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+  <text x="140" y="116" fill="#58a6ff" font-size="14" font-weight="700" text-anchor="middle">Scenario</text>
+  <text x="140" y="142" fill="#c9d1d9" font-size="12" text-anchor="middle">Target (vulnerable)</text>
+  <text x="140" y="166" fill="#c9d1d9" font-size="12" text-anchor="middle">Attack (parameterized)</text>
+  <text x="140" y="190" fill="#c9d1d9" font-size="12" text-anchor="middle">Benign suite (+ "whale")</text>
+  <text x="140" y="226" fill="#8b949e" font-size="11" text-anchor="middle">01 reentrancy</text>
+  <text x="140" y="242" fill="#8b949e" font-size="11" text-anchor="middle">02 oracle · 03 access</text>
+
+  <!-- Defense hook -->
+  <rect x="300" y="92" width="220" height="170" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+  <text x="410" y="116" fill="#58a6ff" font-size="14" font-weight="700" text-anchor="middle">IDefense hook</text>
+  <text x="410" y="143" fill="#c9d1d9" font-size="12" text-anchor="middle">authorize(caller, sel,</text>
+  <text x="410" y="160" fill="#c9d1d9" font-size="12" text-anchor="middle">value, ctx) → allow</text>
+  <text x="410" y="196" fill="#8b949e" font-size="11" text-anchor="middle">threshold/rate  vs</text>
+  <text x="410" y="212" fill="#3fb950" font-size="11" font-weight="700" text-anchor="middle">structural / invariant</text>
+  <text x="410" y="240" fill="#8b949e" font-size="11" text-anchor="middle">one firewall line in the target</text>
+
+  <!-- EVM scorer -->
+  <rect x="570" y="92" width="220" height="170" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+  <text x="680" y="116" fill="#58a6ff" font-size="14" font-weight="700" text-anchor="middle">EVM scorer (Foundry)</text>
+  <text x="680" y="143" fill="#c9d1d9" font-size="12" text-anchor="middle">run attack + benign</text>
+  <text x="680" y="160" fill="#c9d1d9" font-size="12" text-anchor="middle">on a forked chain</text>
+  <text x="680" y="196" fill="#c9d1d9" font-size="12" text-anchor="middle">funds saved, FPs</text>
+  <text x="680" y="220" fill="#3fb950" font-size="13" font-weight="700" text-anchor="middle">verifiable reward</text>
+
+  <!-- Arrows -->
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#8b949e"/>
+    </marker>
+  </defs>
+  <line x1="250" y1="177" x2="298" y2="177" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="520" y1="177" x2="568" y2="177" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Consumers row -->
+  <rect x="80" y="294" width="220" height="44" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+  <text x="190" y="321" fill="#c9d1d9" font-size="12.5" text-anchor="middle">Leaderboard (worst-case)</text>
+
+  <rect x="340" y="294" width="220" height="44" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+  <text x="450" y="316" fill="#c9d1d9" font-size="12.5" text-anchor="middle">Train/test generalization</text>
+  <text x="450" y="331" fill="#3fb950" font-size="11" text-anchor="middle">structural generalizes (gap 0)</text>
+
+  <rect x="600" y="294" width="220" height="44" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+  <text x="710" y="321" fill="#c9d1d9" font-size="12.5" text-anchor="middle">RL agent + co-evolution</text>
+
+  <line x1="680" y1="262" x2="680" y2="292" stroke="#8b949e" stroke-width="2"/>
+  <line x1="680" y1="278" x2="190" y2="278" stroke="#8b949e" stroke-width="2"/>
+  <line x1="450" y1="278" x2="450" y2="292" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="190" y1="278" x2="190" y2="292" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="710" y1="278" x2="710" y2="292" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow)"/>
+</svg>

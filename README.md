@@ -17,6 +17,10 @@ Aegis is the **SWE-bench of on-chain security**: an open, runnable environment
 where a smart-contract defense is *trained* and *objectively ranked* by an
 outcome the EVM itself certifies — funds saved, with no human labels.
 
+<p align="center">
+  <img src="./docs/assets/architecture.svg" alt="Aegis architecture: Scenario -> IDefense hook -> EVM scorer -> leaderboard, generalization, RL" width="100%">
+</p>
+
 ---
 
 ## TL;DR — the result that matters
