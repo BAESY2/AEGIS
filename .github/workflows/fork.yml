@@ -25,4 +25,4 @@ jobs:
       - name: Fork-test the oracle guards on live mainnet state
         env:
           MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL || 'https://ethereum-rpc.publicnode.com' }}
-        run: forge test --match-contract ForkOracle -vv
+        run: forge test --match-contract Fork -vv

@@ -14,7 +14,7 @@ test:
 # state (skips automatically without a fork endpoint)
 fork:
 	MAINNET_RPC_URL=$${MAINNET_RPC_URL:-https://ethereum-rpc.publicnode.com} \
-		forge test --match-contract ForkOracle -vv
+		forge test --match-contract Fork -vv
 
 fmt:
 	forge fmt
