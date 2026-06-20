@@ -113,6 +113,10 @@ def main(argv: list[str] | None = None) -> int:
     psub = sub.add_parser("submit", help="score your submissions/Submission.sol and rank it")
     psub.add_argument("scenario", nargs="?", default="reentrancy")
 
+    pdx = sub.add_parser("dex-coevolve", help="AMM arms race: attacker search discovers split-trade evasion; defender best-responds with a windowed cap")
+    pdx.add_argument("--per-trade-bps", type=float, default=200.0)
+    pdx.add_argument("--benign-bps", type=float, default=500.0)
+
     pe = sub.add_parser("explore", help="active learning: query the most uncertain points")
     pe.add_argument("--acquire", type=int, default=0, help="score N uncertain points on the EVM and add them")
     pe.add_argument("--scenario", default=None, help="restrict the experiment to one class (e.g. behavioral)")
@@ -297,6 +301,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "coevolve":
         for sc in _scenarios(args.scenario):
             _print_coevolution(sc, cache)
+        return 0
+
+    if args.cmd == "dex-coevolve":
+        from . import dex
+
+        r = dex.coevolve(per_trade_bps=args.per_trade_bps, benign_bps=args.benign_bps)
+        print(dex.format_report(r))
         return 0
 
     if args.cmd == "score":

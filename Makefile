@@ -1,5 +1,5 @@
 # Aegis — common tasks
-.PHONY: install build test fork fmt bench leaderboard verify trajectories space dataset classify recommend submit serve rl-train learn coevolve frontier oracle generalize clean
+.PHONY: install build test fork fmt bench leaderboard verify trajectories space dataset classify recommend submit serve rl-train learn coevolve dex-coevolve frontier oracle generalize clean
 
 install:
 	forge install foundry-rs/forge-std --no-commit || true
@@ -74,6 +74,11 @@ learn:
 # attacker/defender arms race (produces scoring/coevolution.json)
 coevolve:
 	cd aegis-gym && python3 coevolve.py
+
+# AMM arms race: attacker search discovers the split-trade evasion; defender
+# best-responds with the windowed cumulative cap that bounds it
+dex-coevolve:
+	cd aegis-gym && python3 -m aegis dex-coevolve
 
 # rate-based vs behavioral defense comparison
 frontier:
