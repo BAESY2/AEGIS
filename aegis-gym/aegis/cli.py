@@ -122,7 +122,8 @@ def main(argv: list[str] | None = None) -> int:
     pw.add_argument("--blocks", type=int, default=6000, help="how many recent blocks to scan")
     pw.add_argument("--chunk", type=int, default=3000, help="getLogs block-window size")
     pw.add_argument("--rpc", default=None, help="RPC URL (else AEGIS_RPC_URL / ARCHIVE_RPC_URL)")
-    pw.add_argument("--consensus", action="store_true", help="cross-venue consensus test (Uniswap vs Sushiswap) instead of price-impact")
+    pw.add_argument("--consensus", action="store_true", help="cross-venue consensus test instead of price-impact")
+    pw.add_argument("--reference", default="sushi", choices=["sushi", "v3"], help="consensus reference venue: shallow Sushiswap V2 or deep Uniswap V3")
 
     pe = sub.add_parser("explore", help="active learning: query the most uncertain points")
     pe.add_argument("--acquire", type=int, default=0, help="score N uncertain points on the EVM and add them")
@@ -327,8 +328,12 @@ def main(argv: list[str] | None = None) -> int:
         latest = wild._block_number(url)
         frm, to = latest - args.blocks, latest
         if args.consensus:
-            rep = wild.scan_cross_venue(url, wild.CONSENSUS_VENUES, frm, to, chunk=args.chunk)
-            print(wild.format_cross_venue(rep, frm, to))
+            if args.reference == "v3":
+                rep = wild.scan_v2_vs_v3(url, wild.TOP_POOLS["USDC/WETH"], wild.V3_USDC_WETH, frm, to, chunk=args.chunk)
+                print(wild.format_v2_v3(rep, frm, to))
+            else:
+                rep = wild.scan_cross_venue(url, wild.CONSENSUS_VENUES, frm, to, chunk=args.chunk)
+                print(wild.format_cross_venue(rep, frm, to))
             return 0
         results = [
             wild.scan_pool(url, name, pool, frm, to, chunk=args.chunk)
