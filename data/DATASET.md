@@ -2,9 +2,9 @@
 
 An EVM-verified, label-free corpus of smart-contract defense matchups. Every record is produced by contract execution on a forked chain (Foundry) — no human labels, no Python heuristics. This is the concrete form of the project's data asset: each scenario added and each match played enlarges it.
 
-- **Records:** 1762
-- **Positive-reward (precise) matchups:** 1178
-- **Zero/negative-reward matchups:** 584
+- **Records:** 2301
+- **Positive-reward (precise) matchups:** 1684
+- **Zero/negative-reward matchups:** 617
 - **Provenance:** deterministic; regenerate/extend with `cd aegis-gym && python3 -m aegis dataset --budget N --seed S`.
 
 ## Per-scenario coverage
@@ -12,7 +12,7 @@ An EVM-verified, label-free corpus of smart-contract defense matchups. Every rec
 | Scenario | Records | Families (n) |
 |----------|:-------:|--------------|
 | access | 332 | *identity (10), rate-based (322) |
-| behavioral | 192 | amount (40), behavioral (40), newdest (8), none (8), composite (96) |
+| behavioral | 731 | amount (105), behavioral (105), newdest (21), none (21), composite (479) |
 | governance | 90 | *snapshot (9), vote-cap (81) |
 | oracle | 793 | fixed-anchor (385), *lagged-oracle (408) |
 | reentrancy | 355 | *behavioral (20), rate-based (308), *composite (27) |
@@ -41,7 +41,7 @@ An EVM-verified, label-free corpus of smart-contract defense matchups. Every rec
 
 A logistic-regression model trained on this corpus predicts whether a defense holds (reward > 0) **without running the EVM**:
 
-- Test accuracy: **74.1%** (precision 79.7%, recall 80.3%; base rate 64.4%), on 441 held-out matchups.
+- Test accuracy: **68.9%** (precision 83.1%, recall 71.8%; base rate 72.7%), on 576 held-out matchups.
 - It sharpens as the corpus grows — the compounding data asset in action.
 
 License: MIT (same as the repository).
