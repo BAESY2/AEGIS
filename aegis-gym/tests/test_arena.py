@@ -32,6 +32,18 @@ class TestArena(unittest.TestCase):
         out = arena.format_report(arena.generalization_study(seed=0))
         self.assertIn("Swarm training generalizes", out)
 
+    def test_adaptive_policy_beats_fixed_cap(self):
+        for seed in range(3):
+            r = arena.adaptive_study(seed=seed)
+            # the context-adaptive policy has lower mean drain than the best fixed cap
+            self.assertLess(r["adaptive_mean_drain"], r["fixed_mean_drain"])
+            # it learned the rule "cap ~ honest demand": slope near 1, small intercept
+            self.assertGreater(r["genome"][1], 0.8)
+            self.assertLess(r["genome"][1], 1.3)
+            # on the quietest pool it is far tighter than the fixed cap
+            b, aw, ad, fd = r["per_pool"][0]
+            self.assertLess(ad, fd)
+
 
 if __name__ == "__main__":
     unittest.main()

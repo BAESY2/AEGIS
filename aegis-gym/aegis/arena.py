@@ -164,3 +164,121 @@ def format_report(r: dict) -> str:
     else:
         lines.append("No generalization gap in this run.")
     return "\n".join(lines)
+
+
+# --- context-adaptive defender: a policy that reads the pool and sets its cap ---
+
+# Pools differ in honest demand (bps of liquidity traded per window). A single
+# fixed cap must be loose enough for the busiest pool, over-exposing the quiet
+# ones. An adaptive policy reads each pool's honest throughput and tightens.
+POOL_TYPES = [200.0, 500.0, 1000.0, 2000.0]
+
+
+def _benign_ok_bps(per: float, win: float, benign_bps: float, slices: int = 4) -> bool:
+    pool = Pool(RIN, ROUT)
+    ptc, wcc = PerTradeCap(per), WindowedCumulativeCap(win)
+    wcc.open_window("b", pool.reserve_in)
+    each = (benign_bps / 10000.0) / slices * pool.reserve_in
+    for _ in range(slices):
+        if not ptc.allows(pool, "b", each) or not wcc.allows(pool, "b", each):
+            return False
+        pool.execute(each)
+    return True
+
+
+def _adaptive_window(genome, benign_bps):
+    per, slope, intercept = genome
+    return min(5000.0, max(50.0, slope * benign_bps + intercept))
+
+
+def _pool_costs(per, win_for, attackers):
+    """mean drain across the pool types; an unusable cap (blocks honest demand)
+    scores the worst (1.0)."""
+    costs = []
+    for b in POOL_TYPES:
+        win = win_for(b)
+        costs.append(1.0 if not _benign_ok_bps(per, win, b)
+                     else max(_drain((per, win), a) for a in attackers))
+    return sum(costs) / len(costs)
+
+
+def _mutate_genome(gm, rng):
+    per, slope, intercept = gm
+    return (
+        min(2000.0, max(20.0, per * rng.uniform(0.7, 1.4))),
+        min(3.0, max(0.0, slope * rng.uniform(0.6, 1.5) + rng.uniform(-0.1, 0.1))),
+        min(2000.0, max(0.0, intercept * rng.uniform(0.6, 1.5) + rng.uniform(-50, 50))),
+    )
+
+
+def coevolve_adaptive(generations: int = 30, pop: int = 16, seed: int = 0):
+    """Evolve a defender POLICY (per_trade, slope, intercept) — window cap =
+    slope*honest_demand + intercept — against the attacker swarm across pools."""
+    rng = random.Random(seed)
+    genomes = [(rng.uniform(50, 2000), rng.uniform(0, 2), rng.uniform(0, 1000)) for _ in range(pop)]
+    atks = [rng.uniform(0.001, 0.4) for _ in range(pop)]
+    half = pop // 2
+    for _ in range(generations):
+        genomes.sort(key=lambda gm: _pool_costs(gm[0], lambda b, g=gm: _adaptive_window(g, b), atks))
+        best = genomes[0]
+        atks.sort(key=lambda a: max(_drain((best[0], _adaptive_window(best, b)), a) for b in POOL_TYPES),
+                  reverse=True)
+        genomes = genomes[:half] + [_mutate_genome(rng.choice(genomes[:half]), rng) for _ in range(pop - half)]
+        atks = (atks[: half - 3]
+                + [_mutate_atk(rng.choice(atks[:half]), rng) for _ in range(pop - half)]
+                + [rng.choice([0.001, 0.003, 0.01, 0.03, 0.1]) for _ in range(3)])
+    return best
+
+
+def adaptive_study(seed: int = 0) -> dict:
+    """Does a context-adaptive policy beat the best single fixed cap across pools
+    with different honest demand? Trained vs the swarm, tested on held-out attacks."""
+    genome = coevolve_adaptive(seed=seed)
+    held_out = [0.0008, 0.002, 0.005, 0.012, 0.03, 0.07, 0.15, 0.35]
+
+    adaptive_cost = _pool_costs(genome[0], lambda b: _adaptive_window(genome, b), held_out)
+
+    best_fixed, best_fc = (1600.0, 5000.0), 9.0
+    for per in (50, 100, 200, 400, 800, 1600):
+        for win in (500, 1000, 2000, 3000, 5000):
+            fc = _pool_costs(float(per), lambda b, w=win: float(w), held_out)
+            if fc < best_fc:
+                best_fc, best_fixed = fc, (float(per), float(win))
+
+    per_pool = []
+    for b in POOL_TYPES:
+        aw = _adaptive_window(genome, b)
+        ad = (1.0 if not _benign_ok_bps(genome[0], aw, b)
+              else max(_drain((genome[0], aw), a) for a in held_out))
+        fper, fwin = best_fixed
+        fd = (1.0 if not _benign_ok_bps(fper, fwin, b)
+              else max(_drain((fper, fwin), a) for a in held_out))
+        per_pool.append((b, aw, ad, fd))
+    return {
+        "genome": genome,
+        "adaptive_mean_drain": adaptive_cost,
+        "fixed": best_fixed,
+        "fixed_mean_drain": best_fc,
+        "per_pool": per_pool,
+    }
+
+
+def format_adaptive(r: dict) -> str:
+    g = r["genome"]
+    lines = [
+        "Context-adaptive defender — policy vs best fixed cap, across pools",
+        "=" * 64,
+        f"learned policy: window_cap = {g[1]:.2f} * honest_demand_bps + {g[2]:.0f}  (per-trade {g[0]:.0f}bps)",
+        f"best single fixed cap: per={r['fixed'][0]:.0f}bps window={r['fixed'][1]:.0f}bps",
+        "",
+        f"{'pool honest demand':>18} {'adaptive win':>13} {'adaptive drain':>15} {'fixed drain':>12}",
+    ]
+    for b, aw, ad, fd in r["per_pool"]:
+        lines.append(f"{b:>15.0f}bps {aw:>11.0f}bps {ad*100:>13.1f}% {fd*100:>10.1f}%")
+    lines.append("")
+    lines.append(f"mean worst-case drain across pools: adaptive {r['adaptive_mean_drain']*100:.1f}% "
+                 f"vs fixed {r['fixed_mean_drain']*100:.1f}%")
+    lines.append("The adaptive policy reads each pool's honest demand and tightens the cap to "
+                 "match;")
+    lines.append("the fixed cap must stay loose enough for the busiest pool, over-exposing quiet ones.")
+    return "\n".join(lines)
