@@ -63,6 +63,7 @@ Everything below runs from one dependency-free CLI; every number is EVM-verified
 | **Generalization** | structural defenses transfer to unseen attackers (gap 0); thresholds overfit (gap 1) | `aegis generalize` |
 | **Leaderboard + chart** | worst-case ranking per class, auto-generated | `aegis bench` |
 | **Co-evolution** | attacker/defender arms race (0.00 → 0.50 robustness) | `aegis coevolve` |
+| **AMM arms race** | attacker *search* discovers split-trade evasion (98% drain); defender best-responds with a windowed cap (→ 4.7%) | `aegis dex-coevolve` |
 | **Policy-gradient RL** | an agent learns a robust defense from the reward alone | `aegis train` |
 | **~10^10 space** | parameter ranges × 2^N defense compositions | `aegis space` |
 | **Dataset + model** | 2,300+ EVM-verified labels; a "will this hold?" classifier | `aegis dataset` / `classify` |
