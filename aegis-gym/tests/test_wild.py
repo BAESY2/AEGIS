@@ -92,12 +92,16 @@ class TestCrossVenue(unittest.TestCase):
             "over_50bps": 2,
             "over_100bps": 1,
             "over_200bps": 0,
+            "persist_50bps": 1,
+            "persist_100bps": 0,
+            "persist_200bps": 0,
             "chunks_ok": 2,
             "chunks_failed": 0,
         }
         out = wild.format_cross_venue(rep, 100, 200)
         self.assertIn("4 real cross-venue price samples", out)
-        self.assertIn("@0.5%=2", out)
+        self.assertIn("instantaneous flag", out)
+        self.assertIn("persistent flag", out)
 
 
 if __name__ == "__main__":
