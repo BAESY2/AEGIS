@@ -137,6 +137,7 @@ def main(argv: list[str] | None = None) -> int:
     par = sub.add_parser("arena", help="population (swarm) co-evolution: do swarm-trained defenses generalize vs single-threat tuning?")
     par.add_argument("--seed", type=int, default=0)
     par.add_argument("--adaptive", action="store_true", help="evolve a context-adaptive policy (cap reads the pool's honest demand) vs the best fixed cap")
+    par.add_argument("--real", action="store_true", help="train/evaluate on REAL captured mainnet swaps + the real exploit corpus (not a synthetic generator)")
 
     pe = sub.add_parser("explore", help="active learning: query the most uncertain points")
     pe.add_argument("--acquire", type=int, default=0, help="score N uncertain points on the EVM and add them")
@@ -334,7 +335,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "arena":
         from . import arena
 
-        if args.adaptive:
+        if args.real:
+            print(arena.format_real(arena.real_data_study()))
+        elif args.adaptive:
             print(arena.format_adaptive(arena.adaptive_study(seed=args.seed)))
         else:
             print(arena.format_report(arena.generalization_study(seed=args.seed)))
