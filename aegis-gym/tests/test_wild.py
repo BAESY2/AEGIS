@@ -103,6 +103,24 @@ class TestCrossVenue(unittest.TestCase):
         self.assertIn("instantaneous flag", out)
         self.assertIn("persistent flag", out)
 
+    def test_v3_price_decode_is_sane(self):
+        # sqrtPriceX96 for ~$1700 ETH on a USDC(6)/WETH(18) pool should decode
+        # back to ~1700 (at 1e18 scale). Pick sqrtP from the known relation:
+        # USD-1e18 = 1e30 * 2^192 / sqrtP^2  =>  sqrtP = sqrt(1e30 * 2^192 / (1700e18))
+        target = 1700 * 10**18
+        sqrtp = int(((10**30) * (1 << 192) / target) ** 0.5)
+        usd = wild._v3_usd(sqrtp)
+        self.assertAlmostEqual(usd / 1e18, 1700.0, delta=5.0)
+        self.assertEqual(wild._v3_usd(0), 0.0)
+
+    def test_v2_v3_report_formats(self):
+        rep = {"samples": 3, "devs": [10.0, 20.0, 30.0],
+               "over_50bps": 0, "over_100bps": 0, "over_200bps": 0,
+               "chunks_ok": 2, "chunks_failed": 0}
+        out = wild.format_v2_v3(rep, 1, 2)
+        self.assertIn("DEEP reference", out)
+        self.assertIn("3 real cross-venue price samples", out)
+
 
 if __name__ == "__main__":
     unittest.main()
