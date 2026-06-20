@@ -393,6 +393,15 @@ launching attacks against live systems, performs no attribution or "hack-back,"
 and confines any adaptive attacker to simulation. Contributions must stay within
 that scope — see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-## License
+## License — open core
 
-MIT. See [LICENSE](./LICENSE).
+This repository (the `IDefense` interface, the reference guards, the benchmark,
+and the research training ground) is **MIT** — free to fork, self-host, and
+integrate. See [LICENSE](./LICENSE).
+
+The **operated product** is not here and is not MIT: the real-time **Aegis
+Sentinel** monitoring service, the **cross-protocol dataset** it accumulates
+(the moat), the production-trained policies, and the brand are proprietary. The
+boundary is drawn explicitly in [LICENSING.md](./LICENSING.md) — a standard
+open-core split (cf. Sentry, GitLab, CockroachDB): the code is the funnel, the
+operated service + the data are the company.
