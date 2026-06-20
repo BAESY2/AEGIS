@@ -97,6 +97,56 @@ def fetch_source(address: str, chain: int = 1) -> str:
     return "\n".join(f.get("content", "") for f in data.get("files", []) if f.get("name", "").endswith(".sol"))
 
 
+ETHERSCAN_CHAINS = {
+    "ethereum": 1, "base": 8453, "polygon": 137, "arbitrum": 42161,
+    "optimism": 10, "avax": 43114, "bsc": 56, "gnosis": 100, "xdai": 100,
+    "fantom": 250, "blast": 81457, "mantle": 5000, "celo": 42220,
+}
+
+
+def fetch_source_etherscan(address: str, key: str, chain: int = 1) -> str:
+    """Fetch verified source via the Etherscan v2 multichain API (needs a free
+    key). Broader coverage than Sourcify (proxies, newer contracts, 50+ chains)."""
+    import json
+    import urllib.request
+
+    url = (f"https://api.etherscan.io/v2/api?chainid={chain}&module=contract"
+           f"&action=getsourcecode&address={address}&apikey={key}")
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (aegis-hunt)"})
+    try:
+        with urllib.request.urlopen(req, timeout=25) as resp:
+            data = json.loads(resp.read())
+        if data.get("status") != "1":
+            return ""
+        return data["result"][0].get("SourceCode", "") or ""
+    except Exception:
+        return ""
+
+
+def defillama_oracle_candidates(min_tvl: float = 200_000, max_tvl: float = 2e8,
+                                exclude=("Chainlink",)) -> list:
+    """Recon: protocols DefiLlama tags with a NON-Chainlink oracle (Internal /
+    DEX / TWAP / Curve …) — the pond where price-manipulation bugs live. Returns
+    (name, category, oracles, tvl, address). Read-only; this only narrows where to
+    *look*, it asserts nothing about any specific protocol's safety."""
+    import json
+    import urllib.request
+
+    req = urllib.request.Request("https://api.llama.fi/protocols",
+                                 headers={"User-Agent": "Mozilla/5.0 (aegis-hunt)"})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        prots = json.loads(resp.read())
+    out = []
+    for p in prots:
+        ors = set(p.get("oracles") or [])
+        tvl = p.get("tvl") or 0
+        addr = p.get("address")
+        if ors and not (ors & set(exclude)) and addr and "0x" in str(addr) and min_tvl < tvl < max_tvl:
+            out.append((p["name"], p.get("category"), sorted(ors), round(tvl), addr))
+    out.sort(key=lambda x: -x[3])
+    return out
+
+
 def scan_source(source: str) -> dict:
     """Flag manipulable-oracle reads and note any mitigations present. A heuristic
     triage, not a proof — a hit means 'read this contract by hand'."""
