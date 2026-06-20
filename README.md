@@ -98,6 +98,7 @@ python3 -m aegis dataset --budget 200  # grow the EVM-verified trajectory datase
 python3 -m aegis classify              # train a "will this defense hold?" model
 python3 -m aegis recommend governance  # recommend the defense to deploy for a threat
 python3 -m aegis space                 # the ~10^10 combinatorial space size
+python3 -m aegis transfer              # does defense-quality generalize across bug classes?
 python3 -m aegis explore --scenario behavioral   # active learning vs random (honest)
 python3 -m aegis score access owneronly 11   # score one matchup on the EVM
 ```
@@ -179,11 +180,17 @@ behavioral             129       16,769        100       1,676,900
 TOTAL                                               ~1.1 x 10^10
 ```
 
-The shipped dataset samples ~1,500 of these (~10^-7 of the space). The value is
-not the four targets — it is the **~10^10-point space they generate and the
-engine that scores any point of it on the EVM.** Composition is real and
-non-trivial: stacking a perfect structural defense with a rate limit *lowers*
-reward (1.00 → 0.75) because the stack inherits the limiter's false positives.
+The shipped dataset samples ~10^-7 of the space. The value is not the targets —
+it is the **~10^10-point space they generate and the engine that scores any point
+of it on the EVM.** Composition is real and non-trivial: stacking a perfect
+structural defense with a rate limit *lowers* reward (1.00 → 0.75) because the
+stack inherits the limiter's false positives.
+
+And the classes are not redundant: a "will this defense hold?" model trained on
+every class *except* one transfers poorly to the held-out class (mean
+within−cross accuracy gap **+17%**, up to +36% for governance — run
+`aegis transfer`). Each vulnerability class carries information the others don't —
+the quantitative case for breadth.
 
 ## The core abstraction
 

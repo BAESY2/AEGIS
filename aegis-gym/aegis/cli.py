@@ -82,6 +82,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("verify", help="assert the benchmark invariants on the EVM (CI gate)")
     sub.add_parser("trajectories", help="summarize the compounding trajectory ledger")
     sub.add_parser("space", help="quantify the combinatorial size of the configuration space")
+    sub.add_parser("transfer", help="cross-class transfer: does defense-quality generalize across bug classes?")
     for name in ("leaderboard", "generalize", "coevolve"):
         p = sub.add_parser(name)
         p.add_argument("scenario", nargs="?", default="all")
@@ -200,6 +201,29 @@ def main(argv: list[str] | None = None) -> int:
                 f"(~{rep['coverage_fraction']:.1e} of the space)."
             )
         print("  -> '4 scenarios' is the seed of a ~10^N space, not the space itself.")
+        return 0
+
+    if args.cmd == "transfer":
+        from . import transfer
+
+        rep = transfer.run()
+        print("Cross-class transfer of the 'will this defense hold?' model")
+        print("(train on all OTHER classes, test on the held-out class)\n")
+        print(f"  {'held-out class':<14}{'n':>6}{'base':>8}{'cross':>8}{'within':>8}{'gap':>8}")
+        print("  " + "-" * 52)
+        gaps = []
+        for r in rep["rows"]:
+            gaps.append(r["transfer_gap"])
+            print(f"  {r['held_out']:<14}{r['n']:>6}{r['base_rate']:>8.0%}"
+                  f"{r['cross_class_acc']:>8.0%}{r['within_class_acc']:>8.0%}{r['transfer_gap']:>+8.0%}")
+        mean_gap = sum(gaps) / len(gaps) if gaps else 0.0
+        print(f"\n  mean transfer gap (within - cross): {mean_gap:+.0%}")
+        if mean_gap > 0.1:
+            print("  -> defense-quality structure is largely CLASS-SPECIFIC: a model trained")
+            print("     on other bug classes transfers poorly. Each vulnerability class carries")
+            print("     information the others don't — the quantitative case for breadth.")
+        else:
+            print("  -> defense-quality structure transfers reasonably across classes.")
         return 0
 
     if args.cmd == "leaderboard":
