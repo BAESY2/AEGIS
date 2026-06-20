@@ -128,9 +128,11 @@ def main(argv: list[str] | None = None) -> int:
     pw.add_argument("--window", type=int, default=150, help="TWAP trailing window in blocks")
 
     ph = sub.add_parser("hunt", help="oracle risk: capital to manipulate a pool vs the value it secures")
-    ph.add_argument("--liquidity-usd", type=float, required=True, help="moved-side pool liquidity in USD")
-    ph.add_argument("--secures", type=float, required=True, help="value the oracle secures in USD")
+    ph.add_argument("--liquidity-usd", type=float, default=None, help="moved-side pool liquidity in USD")
+    ph.add_argument("--secures", type=float, default=None, help="value the oracle secures in USD")
     ph.add_argument("--move", type=float, default=2.0, help="price move factor an attack needs (2.0 = double)")
+    ph.add_argument("--source", default=None, help="instead: fetch verified source for this address (Sourcify) and flag manipulable oracle reads")
+    ph.add_argument("--chain", type=int, default=1, help="chain id for --source")
 
     pe = sub.add_parser("explore", help="active learning: query the most uncertain points")
     pe.add_argument("--acquire", type=int, default=0, help="score N uncertain points on the EVM and add them")
@@ -328,6 +330,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "hunt":
         from . import hunt
 
+        if args.source:
+            src = hunt.fetch_source(args.source, chain=args.chain)
+            if not src:
+                print(f"no verified source for {args.source} on chain {args.chain}", file=sys.stderr)
+                return 2
+            print(hunt.format_scan(args.source, hunt.scan_source(src)))
+            return 0
+        if args.liquidity_usd is None or args.secures is None:
+            print("hunt: provide --liquidity-usd and --secures, or --source <address>", file=sys.stderr)
+            return 2
         a = hunt.assess(args.liquidity_usd, args.secures, args.move)
         print(hunt.format_assessment("pool", a))
         return 0

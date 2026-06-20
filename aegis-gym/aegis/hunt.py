@@ -38,6 +38,89 @@ def reserves_usd(url: str, pool: str, block: int | None = None,
     return wild._get_reserves(url, pool, block)
 
 
+def onchain_cost(url: str, pool: str, factor: float, dec0: int = 18, dec1: int = 18,
+                 block: int | None = None) -> dict:
+    """Read a live pool and report the capital (in each token's human units) to
+    move its mid-price by `factor`. No USD oracle needed — the caller judges the
+    cost against the value the protocol's oracle secures. Read-only."""
+    r0, r1 = reserves_usd(url, pool, block)
+    frac = manipulation_cost_fraction(factor)
+    # to move price0 (=r1/r0) up by `factor`, push token1 in: ~r1*(sqrt(f)-1)
+    cost_token1 = (r1 * frac) / (10 ** dec1)
+    # to move it down, push token0 in: ~r0*(sqrt(f)-1)
+    cost_token0 = (r0 * frac) / (10 ** dec0)
+    return {
+        "pool": pool,
+        "reserve0": r0 / (10 ** dec0),
+        "reserve1": r1 / (10 ** dec1),
+        "move_factor": factor,
+        "cost_token0_to_move_down": cost_token0,
+        "cost_token1_to_move_up": cost_token1,
+    }
+
+
+# --- source-level recon: fetch verified source and flag manipulable-oracle reads ---
+
+# risky: a price read straight off live, flash-manipulable state
+RISKY_PATTERNS = {
+    "getReserves": "Uniswap-V2-style spot reserves read",
+    "getAmountsOut": "router spot quote (manipulable in-block)",
+    "getAmountOut": "AMM spot quote (manipulable in-block)",
+    ".slot0": "Uniswap V3 instantaneous price (no TWAP)",
+    "getPricePerFullShare": "vault share price (donation-inflatable)",
+    "pricePerShare": "vault share price (donation-inflatable)",
+    "balanceOf(address(this))": "balance-based pricing (flash-skewable)",
+}
+# mitigations: their presence lowers concern
+MITIGATIONS = {
+    "latestRoundData": "Chainlink feed",
+    "price0CumulativeLast": "Uniswap V2 TWAP accumulator",
+    "price1CumulativeLast": "Uniswap V2 TWAP accumulator",
+    "observe(": "Uniswap V3 TWAP",
+    "consult(": "TWAP consult",
+}
+
+
+def fetch_source(address: str, chain: int = 1) -> str:
+    """Fetch verified contract source from Sourcify (free, no key). Returns the
+    concatenated Solidity of all files, or '' if unverified/unavailable."""
+    import json
+    import urllib.request
+
+    url = f"https://sourcify.dev/server/files/any/{chain}/{address}"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (aegis-hunt)"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read())
+    except Exception:
+        return ""
+    return "\n".join(f.get("content", "") for f in data.get("files", []) if f.get("name", "").endswith(".sol"))
+
+
+def scan_source(source: str) -> dict:
+    """Flag manipulable-oracle reads and note any mitigations present. A heuristic
+    triage, not a proof — a hit means 'read this contract by hand'."""
+    risky = {pat: source.count(pat) for pat in RISKY_PATTERNS if pat in source}
+    mit = {pat: source.count(pat) for pat in MITIGATIONS if pat in source}
+    suspicious = bool(risky) and not mit
+    return {"risky": risky, "mitigations": mit, "suspicious": suspicious}
+
+
+def format_scan(address: str, scan: dict) -> str:
+    lines = [f"{address}:"]
+    if not scan["risky"]:
+        lines.append("  no obvious spot-price reads found")
+        return "\n".join(lines)
+    for pat, n in scan["risky"].items():
+        lines.append(f"  [risky x{n}] {pat} — {RISKY_PATTERNS[pat]}")
+    if scan["mitigations"]:
+        for pat, n in scan["mitigations"].items():
+            lines.append(f"  [mitigation x{n}] {pat} — {MITIGATIONS[pat]}")
+    else:
+        lines.append("  NO mitigation (Chainlink/TWAP) found near these reads — review by hand")
+    return "\n".join(lines)
+
+
 def assess(pool_liquidity_usd: float, secured_value_usd: float,
            move_factor: float) -> dict:
     """Given a pool's *moved-side* liquidity (USD), the value an oracle on it

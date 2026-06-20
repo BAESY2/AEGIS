@@ -29,5 +29,27 @@ class TestHunt(unittest.TestCase):
         self.assertIn("likely safe", out)
 
 
+class TestSourceScan(unittest.TestCase):
+    def test_flags_unmitigated_spot_read(self):
+        src = "function getPrice() public view returns (uint) { (uint r0, uint r1,) = pair.getReserves(); return r1 * 1e18 / r0; }"
+        scan = hunt.scan_source(src)
+        self.assertIn("getReserves", scan["risky"])
+        self.assertFalse(scan["mitigations"])
+        self.assertTrue(scan["suspicious"])  # risky read, no Chainlink/TWAP
+
+    def test_not_suspicious_when_chainlink_present(self):
+        src = "getReserves(); ... latestRoundData(); // uses Chainlink as the reference"
+        scan = hunt.scan_source(src)
+        self.assertIn("getReserves", scan["risky"])
+        self.assertIn("latestRoundData", scan["mitigations"])
+        self.assertFalse(scan["suspicious"])
+
+    def test_clean_source_has_no_risky_reads(self):
+        src = "function transfer(address to, uint256 amt) external returns (bool) {}"
+        scan = hunt.scan_source(src)
+        self.assertEqual(scan["risky"], {})
+        self.assertIn("no obvious spot-price reads", hunt.format_scan("x", scan))
+
+
 if __name__ == "__main__":
     unittest.main()
