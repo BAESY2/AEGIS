@@ -70,7 +70,31 @@ Everything below runs from one dependency-free CLI; every number is EVM-verified
 | **Cross-class transfer** | defense-quality is class-specific (+17% gap) — breadth matters | `aegis transfer` |
 | **Robust / minimax** | optimal defense under unknown attacker; regret of not knowing | `aegis robust` |
 | **Pareto frontier** | structural classes collapse to one defense; behavioral is a real trade-off | `aegis pareto` |
-| **Forked-mainnet** | guards on live Uniswap V2 + real Chainlink ETH/USD, with a real executed swap | `make fork` |
+| **Forked-mainnet** | DEX guards on live Uniswap V2 + Sushiswap + real Chainlink — 3-source consensus, TWAP, and price-impact, each with a real executed swap | `make fork` |
+
+## For protocols: defenses validated on live mainnet state
+
+Every oracle/liquidity guard below is tested on a **forked mainnet** — real
+reserves, a real executed swap that manipulates the price, and the live Chainlink
+feed — so you see it hold (or block) under your actual deployment's conditions,
+not a toy mock. They span two families and a runnable drop-in. Run them all with
+`make fork` (point `MAINNET_RPC_URL` at any full node).
+
+| Guard | Threat | What the fork test proves |
+|-------|--------|---------------------------|
+| `MultiSourceConsensusGuard` | one venue manipulated | 3 independent venues (Uniswap V2 + Sushiswap + Chainlink) agree ≈$1,723 → allowed; a real swap crashes Uniswap to ≈$768 → the outlier is blocked |
+| `UniswapV2TwapGuard` | flash / single-block manipulation | builds a real 30-min TWAP (≈$1,725) from on-chain accumulators; spot crashed to ≈$768 in one block, TWAP unmoved → blocked |
+| `PriceImpactGuard` | flash drain / sandwich setup | on live reserves, a 0.1%-of-pool swap = 20 bps (allowed); a half-pool drain = 5552 bps (blocked) |
+| `examples/ProtectedSwapPool` | — | the **one-line hook** wired into a swap path: a draining trade reverts `AEGIS_BLOCKED` at the door; the same pool with no defense lets it through |
+
+**How strong is each guard?** `test/GuardCalibration.t.sol` quantifies it
+deterministically: a 2% price-impact cap permits a single trade of at most ~1% of
+the pool, and to push a TWAP past a 5% cap an attacker who crashes spot 50% must
+*sustain* it for ~180s of a 30-minute window — long enough for arbitrage to drain
+them. The guarantees are checked-in asserts, not claims.
+
+The adoption guide is [`docs/INTEGRATION.md`](./docs/INTEGRATION.md): the one line,
+the `ctx` contract per threat, and how to pick, write, or train a defense.
 
 ## Why this exists
 
