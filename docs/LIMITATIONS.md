@@ -37,9 +37,10 @@ Caveats, stated plainly: (1) it demonstrates the guard's *signal* fires on the
 real manipulated price — it does **not** replay the attacker's full calldata
 against the victim's own contracts; (2) it requires an **archive** node
 (historical state at 2022 blocks), so it is gated on `ARCHIVE_RPC_URL` and skips
-in normal CI; (3) it is **one** exploit. A broader corpus of replayed exploits
-(more hacks, full attacker-calldata replays) remains the most valuable future
-work.
+in normal CI; (3) it is **one** exploit. The method, the replayability boundary
+(it captures persistent manipulations, not intra-tx flash ones), and the path to
+a broader corpus are documented in [`docs/EXPLOITS.md`](./EXPLOITS.md). A broader
+corpus remains the most valuable future work.
 
 ## The RL / "swarm" is low-dimensional today
 
