@@ -80,7 +80,7 @@ Everything below runs from one dependency-free CLI; every number is EVM-verified
 | **Robust / minimax** | optimal defense under unknown attacker; regret of not knowing | `aegis robust` |
 | **Pareto frontier** | structural classes collapse to one defense; behavioral is a real trade-off | `aegis pareto` |
 | **Forked-mainnet** | DEX guards on live Uniswap V2 + Sushiswap + real Chainlink — 3-source consensus, TWAP, and price-impact, each with a real executed swap | `make fork` |
-| **Real exploit replay** | the guard's signal fires on the **actual** Inverse Finance oracle manipulation (Apr 2022): a 56x pump diverges from the genuine TWAP, guard blocks | `make exploit` |
+| **Real exploit replay** | two independent guard signals fire on the **actual** Inverse Finance oracle manipulation (Apr 2022): a 56x pump diverges from the genuine TWAP, and the 300-WETH swap is a 98% price impact — both blocked | `make exploit` |
 
 ## For protocols: defenses validated on live mainnet state
 
