@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 
 from . import analysis, registry, report
@@ -116,6 +117,11 @@ def main(argv: list[str] | None = None) -> int:
     pdx = sub.add_parser("dex-coevolve", help="AMM arms race: attacker search discovers split-trade evasion; defender best-responds with a windowed cap")
     pdx.add_argument("--per-trade-bps", type=float, default=200.0)
     pdx.add_argument("--benign-bps", type=float, default=500.0)
+
+    pw = sub.add_parser("wild", help="run the price-impact guard against REAL mainnet swaps (needs AEGIS_RPC_URL)")
+    pw.add_argument("--blocks", type=int, default=6000, help="how many recent blocks to scan")
+    pw.add_argument("--chunk", type=int, default=3000, help="getLogs block-window size")
+    pw.add_argument("--rpc", default=None, help="RPC URL (else AEGIS_RPC_URL / ARCHIVE_RPC_URL)")
 
     pe = sub.add_parser("explore", help="active learning: query the most uncertain points")
     pe.add_argument("--acquire", type=int, default=0, help="score N uncertain points on the EVM and add them")
@@ -308,6 +314,22 @@ def main(argv: list[str] | None = None) -> int:
 
         r = dex.coevolve(per_trade_bps=args.per_trade_bps, benign_bps=args.benign_bps)
         print(dex.format_report(r))
+        return 0
+
+    if args.cmd == "wild":
+        from . import wild
+
+        url = args.rpc or os.environ.get("AEGIS_RPC_URL") or os.environ.get("ARCHIVE_RPC_URL")
+        if not url:
+            print("set AEGIS_RPC_URL (or ARCHIVE_RPC_URL) to a full/archive node", file=sys.stderr)
+            return 2
+        latest = wild._block_number(url)
+        frm, to = latest - args.blocks, latest
+        results = [
+            wild.scan_pool(url, name, pool, frm, to, chunk=args.chunk)
+            for name, pool in wild.TOP_POOLS.items()
+        ]
+        print(wild.format_report({"from_block": frm, "to_block": to, "results": results}))
         return 0
 
     if args.cmd == "score":
