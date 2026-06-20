@@ -110,6 +110,9 @@ def main(argv: list[str] | None = None) -> int:
     pr = sub.add_parser("recommend", help="recommend the defense to deploy for a scenario")
     pr.add_argument("scenario")
 
+    psub = sub.add_parser("submit", help="score your submissions/Submission.sol and rank it")
+    psub.add_argument("scenario", nargs="?", default="reentrancy")
+
     pe = sub.add_parser("explore", help="active learning: query the most uncertain points")
     pe.add_argument("--acquire", type=int, default=0, help="score N uncertain points on the EVM and add them")
     pe.add_argument("--scenario", default=None, help="restrict the experiment to one class (e.g. behavioral)")
@@ -259,6 +262,22 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"      saved {p['mean_saved']:.2f}, fp {p['fp']}   {p['defense']}")
         print("\n  -> classes with a structural answer collapse to one dominant defense;")
         print("     the behavioral 'no free lunch' class has a multi-point frontier.")
+        return 0
+
+    if args.cmd == "submit":
+        from . import submit
+
+        r = submit.run(args.scenario)
+        print(f"Scoring submissions/Submission.sol on the {r['scenario']} scenario\n")
+        print(f"  {'attacker':>9}{'saved':>8}{'reward':>9}")
+        for row in r["rows"]:
+            print(f"  {row['attacker']:>9}{row['saved']:>8.2f}{row['reward']:>+9.2f}")
+        print(f"\n  worst-case saved:  {r['worst_case_saved']:.2f}")
+        print(f"  worst-case reward: {r['worst_case_reward']:+.2f}  (fp {r['fp']}/{r['benign_total']})")
+        print(f"  -> would rank #{r['rank']} of {r['field']} "
+              f"(reference best {r['leaderboard_best']:+.2f}).")
+        if r["worst_case_reward"] >= (r["leaderboard_best"] or 0) - 1e-9:
+            print("  🏆 ties or beats the best reference defense!")
         return 0
 
     if args.cmd == "leaderboard":

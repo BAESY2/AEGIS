@@ -274,6 +274,13 @@ agent are documented in [docs/RL.md](./docs/RL.md).
    cd aegis-gym && python3 -m aegis score reentrancy yourdefense 2
    ```
 
+Even simpler — **submit without touching the registry**: drop your defense into
+`submissions/Submission.sol` and run `make submit` (or `python3 -m aegis submit`).
+The harness scores it across the reentrancy attacker grid and tells you your
+worst-case reward and where you'd rank. This is the local form of the hosted
+"submit a defense, get scored, climb the board" loop — and, run across many
+contributors, the mechanism that accumulates the multi-party dataset moat.
+
 Adding a whole new **vulnerability class** is one `Scenario(...)` entry in
 `aegis-gym/aegis/registry.py` plus its Solidity target/exploit/defenses — and it
 then flows into the leaderboard, the generalization study, and the arms race
