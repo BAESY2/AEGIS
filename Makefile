@@ -1,5 +1,5 @@
 # Aegis — common tasks
-.PHONY: install build test fmt bench leaderboard verify trajectories dataset classify rl-train learn coevolve frontier oracle generalize clean
+.PHONY: install build test fmt bench leaderboard verify trajectories dataset classify recommend rl-train learn coevolve frontier oracle generalize clean
 
 install:
 	forge install foundry-rs/forge-std --no-commit || true
@@ -39,6 +39,10 @@ dataset:
 # train a defense-outcome classifier on the dataset (data -> model loop)
 classify:
 	cd aegis-gym && python3 -m aegis classify
+
+# recommend the defense to deploy for a scenario (the advisory product surface)
+recommend:
+	cd aegis-gym && python3 -m aegis recommend reentrancy
 
 # continuous policy-gradient agent: learns a robust (window, cap) breaker from
 # the verifiable worst-case reward (writes scoring/training.json)

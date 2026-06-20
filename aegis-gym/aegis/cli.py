@@ -103,6 +103,9 @@ def main(argv: list[str] | None = None) -> int:
     pc.add_argument("--seed", type=int, default=0)
     pc.add_argument("--test-frac", type=float, default=0.25)
 
+    pr = sub.add_parser("recommend", help="recommend the defense to deploy for a scenario")
+    pr.add_argument("scenario")
+
     args = parser.parse_args(argv)
     cache = analysis.ScoreCache()
 
@@ -240,6 +243,55 @@ def main(argv: list[str] | None = None) -> int:
             "(a rate cap holds only when tight enough). The bigger the dataset grows, "
             "the better this model gets — the compounding data asset, made tangible."
         )
+        return 0
+
+    if args.cmd == "recommend":
+        sc = registry.get(args.scenario)
+        rows = analysis.leaderboard(sc, cache)
+        top = rows[0]
+        best_threshold = next((r for r in rows if not r.structural), None)
+        gen_rows, train, test = analysis.generalization(sc, cache)
+        gen = next((g for g in gen_rows if g.family == top.family), None)
+
+        print(f"Scenario {sc.id} — {sc.title}")
+        print(f"\n  ✅ RECOMMENDED: {top.label}  [{top.family}]")
+        print(
+            f"     worst-case funds saved {top.worst_case_saved:.0%}, "
+            f"false positives {top.fp}/{top.benign_total}, "
+            f"worst-case reward {top.worst_case_reward:+.2f}"
+        )
+        if gen is not None:
+            verdict = "generalizes to unseen attackers" if abs(gen.gap) < 1e-9 else "overfits"
+            print(f"     train/test gap {gen.gap:+.2f} — {verdict}")
+        if best_threshold is not None and best_threshold.label != top.label:
+            print(
+                f"\n  ✗ Best threshold/rate alternative: {best_threshold.label} — "
+                f"worst-case saved {best_threshold.worst_case_saved:.0%}, "
+                f"FP {best_threshold.fp}/{best_threshold.benign_total} "
+                f"(does not dominate the structural defense)."
+            )
+        # optional: the trained model's confidence that the pick holds
+        try:
+            from . import classify, sweep
+
+            if len(sweep.read()) >= 20:
+                recs = sweep.read()
+                model = classify.train(
+                    [classify.featurize(r) for r in recs],
+                    [classify.label(r) for r in recs],
+                    seed=0,
+                )
+                cfg = next(c for c in analysis.configs_of(sc) if c.label == top.label)
+                atk = max(sc.attacker_grid)
+                feat = classify.featurize(
+                    {"scenario": sc.key, "structural": cfg.structural,
+                     "params": cfg.env, "attacker": atk, "reward": 0}
+                )
+                print(f"\n  model confidence this defense holds: {model.predict_proba(feat):.0%} "
+                      f"(from {len(recs)} EVM-verified matchups)")
+        except Exception:
+            pass
+        print("\n  Deploy it as a one-line firewall hook (see README / examples/).")
         return 0
 
     return 1

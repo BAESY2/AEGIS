@@ -94,6 +94,9 @@ python3 -m aegis bench                 # full leaderboard + generalization -> LE
 python3 -m aegis generalize            # the headline train/test study
 python3 -m aegis coevolve reentrancy   # an attacker/defender arms race
 python3 -m aegis train reentrancy      # a policy-gradient agent learns a defense
+python3 -m aegis dataset --budget 200  # grow the EVM-verified trajectory dataset
+python3 -m aegis classify              # train a "will this defense hold?" model
+python3 -m aegis recommend governance  # recommend the defense to deploy for a threat
 python3 -m aegis score access owneronly 11   # score one matchup on the EVM
 ```
 
