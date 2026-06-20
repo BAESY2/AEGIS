@@ -225,8 +225,10 @@ draft: [docs/PAPER.md](./docs/PAPER.md). Design: [docs/DESIGN.md](./docs/DESIGN.
 - **Learning (done):** a Gymnasium-style env + a continuous policy-gradient agent
   that learns a robust defense from verifiable reward alone.
 - **Co-evolution (done):** adaptive attacker/defender arms race over the reward.
-- **Hosted leaderboard:** submit a defense, get scored, climb the board — and the
-  submitted trajectories accumulate as the dataset.
+- **Leaderboard automation (done, GitHub-native):** every PR is scored on the
+  EVM and the ranking is posted back as a comment (`.github/workflows/leaderboard.yml`)
+  — submit a defense, get scored, climb the board. A hosted service that
+  accumulates submitted trajectories as a public dataset is next.
 
 ## Scope and safety
 

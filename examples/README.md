@@ -43,10 +43,13 @@ python3 -m aegis leaderboard reentrancy
 python3 -m aegis generalize reentrancy
 ```
 
-## 4. Open a PR
+## 4. Open a PR — it gets scored automatically
 
 Run `forge test` (green) and the Python unit tests, then open a PR using the
-template. Include your `aegis score` / `aegis leaderboard` output.
+template. CI runs the whole benchmark on the EVM and posts the ranked
+[LEADERBOARD.md](../LEADERBOARD.md) as a comment on your PR (the
+`leaderboard` workflow), so your defense is graded automatically — submit,
+get scored, climb the board.
 
 > Reminder: Aegis is strictly defensive. Contribute defenses and scenarios, not
 > tooling to attack live systems. See [../CONTRIBUTING.md](../CONTRIBUTING.md).
