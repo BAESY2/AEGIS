@@ -27,8 +27,11 @@ INV/WETH pool at two real blocks (before, and at the manipulation), reconstructs
 the genuine time-weighted price from the pool's own on-chain accumulators over
 that real window (~0.107 WETH/INV), and shows the manipulated spot at the
 exploit block (~6.0 WETH/INV, a **56x** pump) diverges so far that a
-consensus/deviation guard fed `(spot, TWAP)` returns `false`. The Aegis signal
-fires on the **actual exploited state**.
+consensus/deviation guard fed `(spot, TWAP)` returns `false`. A second,
+independent signal fires on the same real hack: the attacker's manipulating swap
+(300 WETH into a 46-WETH pool, inferred from the real reserve delta) is a 9823 bps
+price impact, so `PriceImpactGuard` blocks it too. Both Aegis signals fire on the
+**actual exploited state**.
 
 Caveats, stated plainly: (1) it demonstrates the guard's *signal* fires on the
 real manipulated price — it does **not** replay the attacker's full calldata
