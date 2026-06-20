@@ -41,6 +41,7 @@ reference scenarios show the pattern:
 | Oracle / price manipulation | `(spotPrice, laggedPrice)` | one-block-lagged oracle / independent reference |
 | Single-venue price manipulation | `(priceA, priceB, priceC)` from independent venues | multi-source consensus (block when one venue is an outlier) |
 | Flash / single-block price manipulation | none — guard reads the pair's accumulators on-chain | Uniswap V2 time-weighted average (block when spot diverges from the TWAP) |
+| Flash drain / sandwich setup (excessive trade footprint) | `(reserveIn, reserveOut, amountIn)` | price-impact cap (block a single swap that moves the pool past a bps threshold) |
 | MEV / sandwich on a swap | `(outputAtSpot, outputAtReference)` | block when realized output << an independent reference (same mechanism as oracle) |
 | Broken access control | `(admin)` | caller-is-admin authorization invariant |
 | Flash-loan governance | `(priorVotes, currentVotes)` | snapshot: votes backed by prior-block holdings |
