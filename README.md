@@ -109,6 +109,15 @@ exploit, a legitimate-traffic suite (including an adversarial-looking-but-honest
 | 03 | **Broken access control** | privileged function missing its auth check | value/rate cap on withdrawals | identity invariant ("only the admin may call") |
 | 04 | **Flash-loan governance takeover** | votes counted at current balance | vote-count cap | snapshot invariant (prior-block holdings) |
 
+Each class models a category responsible for real, nine-figure losses:
+
+| Class | Representative incidents (illustrative) |
+|-------|------------------------------------------|
+| Reentrancy | The DAO (~$60M, 2016); Cream Finance (~$130M, 2021) |
+| Oracle / price manipulation | Mango Markets (~$114M, 2022); Harvest Finance (~$24M, 2020) |
+| Broken access control | Parity multisig freeze (~$150M+, 2017); a recurring top loss category in bridge hacks |
+| Flash-loan governance | Beanstalk (~$182M, 2022) |
+
 The full, **auto-generated** ranking lives in [LEADERBOARD.md](./LEADERBOARD.md)
 (regenerate with `aegis bench`). Each defense is ranked by **worst-case reward**
 — the minimum, over the entire attacker grid, of `funds_saved − false_positive_rate`
