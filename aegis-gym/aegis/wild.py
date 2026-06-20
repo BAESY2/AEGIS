@@ -318,6 +318,93 @@ def _pct(xs: list, p: float) -> float:
     return s[k]
 
 
+SECONDS_PER_BLOCK = 12  # mainnet, post-merge — used to time-weight the wild TWAP
+
+
+def scan_twap(url: str, name: str, pool: str, from_block: int, to_block: int,
+              window_blocks: int = 150, chunk: int = 2000) -> dict:
+    """Wild false-positive test for the TWAP guard: how often does the live spot
+    deviate from a real trailing time-weighted average on a genuine pool? Time is
+    approximated from block deltas (~12s/block), stated honestly."""
+    syncs = []
+    ok = failed = 0
+    b = from_block
+    while b <= to_block:
+        end = min(b + chunk - 1, to_block)
+        try:
+            for (blk, li, r0, r1) in _get_syncs(url, pool, b, end):
+                if r0 > 0 and r1 > 0:
+                    syncs.append((blk, _usd(r0, r1)))
+            ok += 1
+        except Exception:
+            failed += 1
+        b = end + 1
+    syncs.sort()
+
+    devs = []
+    over = {50: 0, 100: 0, 200: 0}
+    window = []  # (block, price)
+    for (blk, price) in syncs:
+        # drop samples older than the window
+        while window and blk - window[0][0] > window_blocks:
+            window.pop(0)
+        if len(window) >= 2:
+            # time-weighted average price over the window (weight = block gap)
+            num = 0.0
+            den = 0.0
+            for i in range(1, len(window)):
+                w = window[i][0] - window[i - 1][0]
+                num += window[i - 1][1] * w
+                den += w
+            twap = num / den if den else price
+            if twap > 0:
+                dev_bps = abs(price - twap) / twap * 10000.0
+                devs.append(dev_bps)
+                for t in over:
+                    if dev_bps > t:
+                        over[t] += 1
+        window.append((blk, price))
+    return {
+        "pool": name, "samples": len(devs), "devs": devs,
+        "over_50bps": over[50], "over_100bps": over[100], "over_200bps": over[200],
+        "window_blocks": window_blocks, "chunks_ok": ok, "chunks_failed": failed,
+    }
+
+
+def format_twap(rep: dict, from_block: int, to_block: int) -> str:
+    devs = rep["devs"]
+    win_min = rep["window_blocks"] * SECONDS_PER_BLOCK / 60
+    lines = [
+        f"Wild TWAP-guard test — {rep['pool']}, ~{win_min:.0f}-min trailing window",
+        f"blocks {from_block}..{to_block}",
+        "=" * 72,
+    ]
+    if not devs:
+        lines.append("no samples / RPC error")
+        return "\n".join(lines)
+    n = rep["samples"]
+    lines.append(f"{n} real spot-vs-TWAP samples")
+    lines.append(
+        f"  spot deviation from TWAP (bps): p50={_pct(devs,50):.1f}  "
+        f"p99={_pct(devs,99):.1f}  p99.9={_pct(devs,99.9):.1f}  max={max(devs):.1f}"
+    )
+    lines.append(
+        f"  TWAP guard would flag: @0.5%={rep['over_50bps']/n*100:.2f}%"
+        f"  @1%={rep['over_100bps']/n*100:.2f}%"
+        f"  @2%={rep['over_200bps']/n*100:.2f}%"
+    )
+    lines.append(
+        "\nReading: on a genuine pool the spot tracks its own short TWAP closely;"
+    )
+    lines.append(
+        "deviations come from real volatility. A real flash manipulation (spot far"
+    )
+    lines.append(
+        "from a TWAP it touched for an instant) is exactly what this guard catches."
+    )
+    return "\n".join(lines)
+
+
 def format_v2_v3(rep: dict, from_block: int, to_block: int) -> str:
     devs = rep["devs"]
     lines = [

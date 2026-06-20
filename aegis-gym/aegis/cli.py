@@ -124,6 +124,8 @@ def main(argv: list[str] | None = None) -> int:
     pw.add_argument("--rpc", default=None, help="RPC URL (else AEGIS_RPC_URL / ARCHIVE_RPC_URL)")
     pw.add_argument("--consensus", action="store_true", help="cross-venue consensus test instead of price-impact")
     pw.add_argument("--reference", default="sushi", choices=["sushi", "v3"], help="consensus reference venue: shallow Sushiswap V2 or deep Uniswap V3")
+    pw.add_argument("--twap", action="store_true", help="TWAP-guard false-positive test (spot vs a real trailing TWAP)")
+    pw.add_argument("--window", type=int, default=150, help="TWAP trailing window in blocks")
 
     pe = sub.add_parser("explore", help="active learning: query the most uncertain points")
     pe.add_argument("--acquire", type=int, default=0, help="score N uncertain points on the EVM and add them")
@@ -327,6 +329,12 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         latest = wild._block_number(url)
         frm, to = latest - args.blocks, latest
+        if args.twap:
+            for name, pool in wild.TOP_POOLS.items():
+                rep = wild.scan_twap(url, name, pool, frm, to, window_blocks=args.window, chunk=args.chunk)
+                print(wild.format_twap(rep, frm, to))
+                print()
+            return 0
         if args.consensus:
             if args.reference == "v3":
                 rep = wild.scan_v2_vs_v3(url, wild.TOP_POOLS["USDC/WETH"], wild.V3_USDC_WETH, frm, to, chunk=args.chunk)

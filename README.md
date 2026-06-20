@@ -81,7 +81,7 @@ Everything below runs from one dependency-free CLI; every number is EVM-verified
 | **Pareto frontier** | structural classes collapse to one defense; behavioral is a real trade-off | `aegis pareto` |
 | **Forked-mainnet** | DEX guards on live Uniswap V2 + Sushiswap + real Chainlink — 3-source consensus, TWAP, and price-impact, each with a real executed swap | `make fork` |
 | **Real exploit replay** | two independent guard signals fire on the **actual** Inverse Finance oracle manipulation (Apr 2022): a 56x pump diverges from the genuine TWAP, and the 300-WETH swap is a 98% price impact — both blocked ([corpus](./docs/EXPLOITS.md)) | `make exploit` |
-| **Wild test** | replays **6,847 real swaps** through the price-impact guard (2% cap blocks **0.03%**) and tests the consensus guard cross-venue: a shallow reference false-positives **14%** at 0.5%, but a **deep** Uniswap V3 reference (26,663 real samples) cuts that to **0.31%** — wild data finds the problem *and* verifies the fix | `aegis wild --consensus` |
+| **Wild test** | all three oracle guards on real mainnet data: price-impact (6,847 swaps, 0.03% FP at 2%), TWAP (2,989 samples, 0.00% FP at 2%), and consensus — a shallow reference false-positives **14%** at 0.5% but a **deep** V3 reference cuts it to **0.31%** (26,663 samples). Wild data finds each guard's safe threshold *and* the consensus fix | `aegis wild` |
 
 ## For protocols: defenses validated on live mainnet state
 

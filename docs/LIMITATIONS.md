@@ -106,11 +106,22 @@ samples; 1% → 5.3%; 2% → 1.8%. The consensus guard is **not** free in the wi
 it needs a threshold set above the real cross-venue spread (here ~2%+), and even
 then it is far noisier than the price-impact guard's 0.03%.
 
+- `aegis wild --twap` — the TWAP guard's false-positive side: how often the live
+  spot deviates from a real ~30-minute trailing TWAP on a genuine pool. Over 2,989
+  real USDC/WETH samples the spot-vs-TWAP deviation was p50 = 8, p99 = 121,
+  max = 145 bps. A **tight 0.5% TWAP threshold false-positives on 10.9%** (ETH is
+  volatile and genuinely drifts from a 30-min average), but a **2% threshold gives
+  0.00%** — and a real flash manipulation (the Inverse pump was ~5,600% off its
+  TWAP) is far above any sane threshold. (Time is approximated from block deltas;
+  stated honestly.)
+
 This is exactly the point of testing in the wild rather than on constructed
 scenarios: it shows *which* guard is safe at *which* threshold on real data. The
-price-impact guard is robust; the cross-venue consensus guard requires care and
-deeper-liquidity reference venues. We report this honestly rather than imply
-every guard is clean.
+price-impact guard is robust at 2% (0.03% FP); the TWAP guard needs ~1-2%
+(0.00% at 2%) because ETH genuinely moves; the cross-venue consensus guard
+requires a deep reference. **Naive tight thresholds are noisy on every oracle
+guard — the safe threshold is a real-data question, and that is what this answers.**
+We report this honestly rather than imply every guard is clean.
 
 **A refinement we tried and the data rejected.** A natural idea is to filter the
 consensus false positives by requiring the deviation to *persist* across samples
