@@ -40,6 +40,7 @@ reference scenarios show the pattern:
 | Reentrancy / drain | `(recordedBalance, vaultBalance)` | per-address per-tx balance invariant |
 | Oracle / price manipulation | `(spotPrice, laggedPrice)` | one-block-lagged oracle / independent reference |
 | Single-venue price manipulation | `(priceA, priceB, priceC)` from independent venues | multi-source consensus (block when one venue is an outlier) |
+| Flash / single-block price manipulation | none — guard reads the pair's accumulators on-chain | Uniswap V2 time-weighted average (block when spot diverges from the TWAP) |
 | MEV / sandwich on a swap | `(outputAtSpot, outputAtReference)` | block when realized output << an independent reference (same mechanism as oracle) |
 | Broken access control | `(admin)` | caller-is-admin authorization invariant |
 | Flash-loan governance | `(priorVotes, currentVotes)` | snapshot: votes backed by prior-block holdings |
@@ -72,10 +73,13 @@ rate-limit. Irreversible actions over user funds stay human/governance-gated.
 
 Defenses can be tested against **live mainnet state** on a fork (see
 `test/Fork*.t.sol`): real Uniswap V2 reserves, a real executed swap, the live
-Chainlink ETH/USD feed, and a three-source consensus across Uniswap V2,
-Sushiswap, and Chainlink (`test/ForkConsensus.t.sol` executes a real swap to
-crash one venue and shows the guard blocks the manipulated outlier while a
-genuine price — all venues agreeing — passes). Point `MAINNET_RPC_URL` at an
+Chainlink ETH/USD feed, a three-source consensus across Uniswap V2, Sushiswap,
+and Chainlink (`test/ForkConsensus.t.sol` executes a real swap to crash one
+venue and shows the guard blocks the manipulated outlier while a genuine
+price — all venues agreeing — passes), and a time-weighted-average guard read
+straight from the pair's on-chain accumulators (`test/ForkTwap.t.sol` builds a
+real 30-minute TWAP, crashes spot within a block, and shows a flash
+manipulation moves spot but not the TWAP). Point `MAINNET_RPC_URL` at an
 archive/full node and run `make fork` to validate a guard against your actual
 deployment's conditions.
 
