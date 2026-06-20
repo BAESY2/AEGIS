@@ -83,6 +83,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("trajectories", help="summarize the compounding trajectory ledger")
     sub.add_parser("space", help="quantify the combinatorial size of the configuration space")
     sub.add_parser("transfer", help="cross-class transfer: does defense-quality generalize across bug classes?")
+    sub.add_parser("robust", help="minimax defense under attacker-type uncertainty (behavioral)")
     for name in ("leaderboard", "generalize", "coevolve"):
         p = sub.add_parser(name)
         p.add_argument("scenario", nargs="?", default="all")
@@ -224,6 +225,24 @@ def main(argv: list[str] | None = None) -> int:
             print("     information the others don't — the quantitative case for breadth.")
         else:
             print("  -> defense-quality structure transfers reasonably across classes.")
+        return 0
+
+    if args.cmd == "robust":
+        from . import robust
+
+        r = robust.run()
+        print(f"Robust defense under attacker-type uncertainty ({r['scenario']}, "
+              f"{r['n_defenses']} defenses x {len(r['stealths'])} stealth levels)\n")
+        print(f"  minimax (robust) defense: {r['robust_defense']}")
+        print(f"    guaranteed worst-case reward: {r['robust_worstcase']:+.2f}")
+        print(f"    mean reward over attacker types: {r['robust_mean']:+.2f}")
+        print(f"  oracle defender (knows the stealth): mean {r['oracle_mean']:+.2f}")
+        print(f"  regret of NOT knowing the attacker: {r['regret_of_not_knowing_attacker']:+.2f}")
+        print("\n  best-response crossover (no single defense is optimal everywhere):")
+        for c in r["crossover"]:
+            print(f"    stealth >= {c['stealth']:>3}: {c['best_defense']:<20} (reward {c['reward']:+.2f})")
+        print("\n  -> the optimal defense depends on the attacker's (unobservable) stealth;")
+        print("     the regret quantifies the value of attacker intelligence.")
         return 0
 
     if args.cmd == "leaderboard":

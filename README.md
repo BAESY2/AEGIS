@@ -99,6 +99,7 @@ python3 -m aegis classify              # train a "will this defense hold?" model
 python3 -m aegis recommend governance  # recommend the defense to deploy for a threat
 python3 -m aegis space                 # the ~10^10 combinatorial space size
 python3 -m aegis transfer              # does defense-quality generalize across bug classes?
+python3 -m aegis robust                # minimax defense under attacker-type uncertainty
 python3 -m aegis explore --scenario behavioral   # active learning vs random (honest)
 python3 -m aegis score access owneronly 11   # score one matchup on the EVM
 ```
