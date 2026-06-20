@@ -8,6 +8,7 @@ import {LendingPool} from "../../src/scenarios/oracle/LendingPool.sol";
 import {OracleManipAttacker} from "../../src/scenarios/oracle/OracleManipAttacker.sol";
 import {PriceDeviationGuard} from "../../src/defenses/PriceDeviationGuard.sol";
 import {LaggedOracleGuard} from "../../src/defenses/LaggedOracleGuard.sol";
+import {Submission} from "../../submissions/oracle/Submission.sol";
 
 /// @notice Shared measurement core for Scenario 02 (oracle/price manipulation).
 abstract contract OracleScenario is Test {
@@ -22,6 +23,7 @@ abstract contract OracleScenario is Test {
         bytes32 k = keccak256(bytes(kind));
         if (k == keccak256("fixed")) return new PriceDeviationGuard(devbps, FAIR);
         if (k == keccak256("lagged")) return new LaggedOracleGuard(devbps);
+        if (k == keccak256("submission")) return new Submission();
         return IDefense(address(0));
     }
 

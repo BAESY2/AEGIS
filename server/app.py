@@ -21,37 +21,44 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 import sys
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlparse, parse_qs
 
 ROOT = Path(__file__).resolve().parent.parent
 LEADERBOARD = ROOT / "scoring" / "leaderboard.json"
 LEDGER = ROOT / "server" / "submissions.jsonl"
-SUBMISSION_SOL = ROOT / "submissions" / "Submission.sol"
 GYM = ROOT / "aegis-gym"
 
+# scenario -> submission slot path (reentrancy uses the top-level slot)
+SLOTS = {
+    "reentrancy": ROOT / "submissions" / "Submission.sol",
+    "oracle": ROOT / "submissions" / "oracle" / "Submission.sol",
+    "access": ROOT / "submissions" / "access" / "Submission.sol",
+    "governance": ROOT / "submissions" / "governance" / "Submission.sol",
+    "behavioral": ROOT / "submissions" / "behavioral" / "Submission.sol",
+}
 
-def _score_submission(source: str) -> dict:
+
+def _score_submission(source: str, scenario: str = "reentrancy") -> dict:
     """Write the submitted source and score it via `aegis submit` (sandbox me)."""
     if os.environ.get("AEGIS_ALLOW_EXECUTION") != "1":
         raise PermissionError(
             "execution disabled: set AEGIS_ALLOW_EXECUTION=1 only in a sandbox"
         )
-    SUBMISSION_SOL.write_text(source)
-    env = {**os.environ, "PATH": f"{os.environ.get('PATH','')}:{Path.home()}/.foundry/bin"}
-    proc = subprocess.run(
-        [sys.executable, "-m", "aegis", "submit", "reentrancy"],
-        cwd=GYM, env=env, capture_output=True, text=True, timeout=300,
-    )
-    if proc.returncode != 0:
-        raise RuntimeError(proc.stderr or proc.stdout)
-    result = json.loads((ROOT / "scoring" / "submission.json").read_text())
+    if scenario not in SLOTS:
+        raise ValueError(f"unknown scenario '{scenario}'; options: {sorted(SLOTS)}")
+    SLOTS[scenario].write_text(source)
+    if str(GYM) not in sys.path:
+        sys.path.insert(0, str(GYM))
+    from aegis import submit as aegis_submit  # imported here so the server starts without forge
+
+    result = aegis_submit.run(scenario)
     record = {
         "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "scenario": "reentrancy",
+        "scenario": scenario,
         "result": result,
     }
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
@@ -86,12 +93,14 @@ class Handler(BaseHTTPRequestHandler):
         return self._send(404, {"error": "not found"})
 
     def do_POST(self):
-        if self.path != "/score":
+        parsed = urlparse(self.path)
+        if parsed.path != "/score":
             return self._send(404, {"error": "not found"})
+        scenario = parse_qs(parsed.query).get("scenario", ["reentrancy"])[0]
         length = int(self.headers.get("content-length", 0))
         source = self.rfile.read(length).decode()
         try:
-            return self._send(200, _score_submission(source))
+            return self._send(200, _score_submission(source, scenario))
         except PermissionError as e:
             return self._send(403, {"error": str(e)})
         except Exception as e:  # noqa: BLE001

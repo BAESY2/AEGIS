@@ -7,6 +7,7 @@ import {Treasury} from "../../src/scenarios/access/Treasury.sol";
 import {UnauthorizedDrainer} from "../../src/scenarios/access/UnauthorizedDrainer.sol";
 import {WindowedRateLimitDefense} from "../../src/defenses/WindowedRateLimitDefense.sol";
 import {OwnerOnlyDefense} from "../../src/defenses/OwnerOnlyDefense.sol";
+import {Submission} from "../../submissions/access/Submission.sol";
 
 /// @notice Shared measurement core for Scenario 03 (broken access control).
 ///         The benign actor is the legitimate admin, performing several small
@@ -33,6 +34,9 @@ abstract contract AccessScenario is Test {
         string memory kind = vm.envOr("AEGIS_DEF", string("windowed"));
         if (keccak256(bytes(kind)) == keccak256(bytes("owneronly"))) {
             return new OwnerOnlyDefense();
+        }
+        if (keccak256(bytes(kind)) == keccak256(bytes("submission"))) {
+            return new Submission();
         }
         return new WindowedRateLimitDefense(W, cap);
     }
