@@ -73,6 +73,31 @@ class TestWildStats(unittest.TestCase):
         self.assertEqual(len(wild.SYNC_TOPIC), 66)
         self.assertTrue(wild.SYNC_TOPIC.startswith("0x1c411e9a"))
         self.assertEqual(len(wild.TOP_POOLS), 4)
+        self.assertEqual(len(wild.CONSENSUS_VENUES), 2)
+
+
+class TestCrossVenue(unittest.TestCase):
+    def test_usd_price_and_percentile(self):
+        # USDC(6)/WETH(18): ~$1700 per ETH, returned at 1e18 scale (deviation is a ratio)
+        usd = wild._usd(1_700_000 * 10**6, 1000 * 10**18)
+        self.assertAlmostEqual(usd / 1e18, 1700.0, delta=1.0)
+        self.assertEqual(wild._pct([], 50), 0.0)
+        self.assertEqual(wild._pct([10, 20, 30], 50), 20)
+
+    def test_cross_venue_report_formats(self):
+        rep = {
+            "venues": ["uniswap", "sushiswap"],
+            "samples": 4,
+            "devs": [5.0, 10.0, 60.0, 120.0],
+            "over_50bps": 2,
+            "over_100bps": 1,
+            "over_200bps": 0,
+            "chunks_ok": 2,
+            "chunks_failed": 0,
+        }
+        out = wild.format_cross_venue(rep, 100, 200)
+        self.assertIn("4 real cross-venue price samples", out)
+        self.assertIn("@0.5%=2", out)
 
 
 if __name__ == "__main__":

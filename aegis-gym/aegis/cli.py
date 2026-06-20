@@ -118,10 +118,11 @@ def main(argv: list[str] | None = None) -> int:
     pdx.add_argument("--per-trade-bps", type=float, default=200.0)
     pdx.add_argument("--benign-bps", type=float, default=500.0)
 
-    pw = sub.add_parser("wild", help="run the price-impact guard against REAL mainnet swaps (needs AEGIS_RPC_URL)")
+    pw = sub.add_parser("wild", help="run the guards against REAL mainnet swaps (needs AEGIS_RPC_URL)")
     pw.add_argument("--blocks", type=int, default=6000, help="how many recent blocks to scan")
     pw.add_argument("--chunk", type=int, default=3000, help="getLogs block-window size")
     pw.add_argument("--rpc", default=None, help="RPC URL (else AEGIS_RPC_URL / ARCHIVE_RPC_URL)")
+    pw.add_argument("--consensus", action="store_true", help="cross-venue consensus test (Uniswap vs Sushiswap) instead of price-impact")
 
     pe = sub.add_parser("explore", help="active learning: query the most uncertain points")
     pe.add_argument("--acquire", type=int, default=0, help="score N uncertain points on the EVM and add them")
@@ -325,6 +326,10 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         latest = wild._block_number(url)
         frm, to = latest - args.blocks, latest
+        if args.consensus:
+            rep = wild.scan_cross_venue(url, wild.CONSENSUS_VENUES, frm, to, chunk=args.chunk)
+            print(wild.format_cross_venue(rep, frm, to))
+            return 0
         results = [
             wild.scan_pool(url, name, pool, frm, to, chunk=args.chunk)
             for name, pool in wild.TOP_POOLS.items()
