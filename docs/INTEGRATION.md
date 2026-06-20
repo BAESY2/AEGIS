@@ -30,6 +30,12 @@ contract YourProtocol {
 block (you revert). `ctx` is an ABI-encoded snapshot **you** define — the
 contract between your function and any defense.
 
+For a complete, runnable example of this exact diff wired into a swap path, see
+[`examples/ProtectedSwapPool.sol`](../examples/ProtectedSwapPool.sol) and its
+end-to-end test [`test/ProtectedPool.t.sol`](../test/ProtectedPool.t.sol): a
+normal trade passes, a pool-draining trade reverts `AEGIS_BLOCKED` at the door,
+and the same pool with no defense lets the drain through.
+
 ## 2. The `ctx` contract
 
 Pass the defense exactly the signal it needs to make a precise decision. The
@@ -41,6 +47,7 @@ reference scenarios show the pattern:
 | Oracle / price manipulation | `(spotPrice, laggedPrice)` | one-block-lagged oracle / independent reference |
 | Single-venue price manipulation | `(priceA, priceB, priceC)` from independent venues | multi-source consensus (block when one venue is an outlier) |
 | Flash / single-block price manipulation | none — guard reads the pair's accumulators on-chain | Uniswap V2 time-weighted average (block when spot diverges from the TWAP) |
+| Flash drain / sandwich setup (excessive trade footprint) | `(reserveIn, reserveOut, amountIn)` | price-impact cap (block a single swap that moves the pool past a bps threshold) |
 | MEV / sandwich on a swap | `(outputAtSpot, outputAtReference)` | block when realized output << an independent reference (same mechanism as oracle) |
 | Broken access control | `(admin)` | caller-is-admin authorization invariant |
 | Flash-loan governance | `(priorVotes, currentVotes)` | snapshot: votes backed by prior-block holdings |
