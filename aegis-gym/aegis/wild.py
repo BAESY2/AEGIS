@@ -156,6 +156,114 @@ def scan_pool(url: str, name: str, pool: str, from_block: int, to_block: int,
     return st
 
 
+# Same asset (USDC/WETH, token0=USDC token1=WETH on both) on two independent venues.
+CONSENSUS_VENUES = {
+    "uniswap": "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc",
+    "sushiswap": "0x397FF1542f962076d0BFE58eA045FfA2d347ACa0",
+}
+
+
+def _usd(r0: int, r1: int) -> float:
+    # USDC(6)/WETH(18) -> USD per ETH
+    return (r0 * 1e30) / r1 if r1 else 0.0
+
+
+def scan_cross_venue(url: str, venues: dict, from_block: int, to_block: int,
+                     chunk: int = 2000) -> dict:
+    """Measure the REAL cross-venue price deviation for one asset on two pools.
+
+    Tests the consensus guard's false-positive side in the wild: how often do two
+    independent honest venues disagree on the price by more than a threshold? We
+    walk both pools' Sync events in block order, track each venue's latest spot,
+    and record the deviation whenever both are known.
+    """
+    names = list(venues)
+    events = []  # (block, logIndex, venue_index, r0, r1)
+    failed = 0
+    ok = 0
+    for vi, name in enumerate(names):
+        b = from_block
+        while b <= to_block:
+            end = min(b + chunk - 1, to_block)
+            try:
+                for (blk, li, r0, r1) in _get_syncs(url, venues[name], b, end):
+                    events.append((blk, li, vi, r0, r1))
+                ok += 1
+            except Exception:
+                failed += 1
+            b = end + 1
+    events.sort(key=lambda x: (x[0], x[1]))
+
+    latest = [None, None]
+    devs = []
+    over_50 = over_100 = over_200 = 0
+    for (_blk, _li, vi, r0, r1) in events:
+        if r0 <= 0 or r1 <= 0:
+            continue
+        latest[vi] = _usd(r0, r1)
+        if latest[0] and latest[1]:
+            a, b2 = latest[0], latest[1]
+            dev_bps = abs(a - b2) / ((a + b2) / 2) * 10000.0
+            devs.append(dev_bps)
+            if dev_bps > 50:
+                over_50 += 1
+            if dev_bps > 100:
+                over_100 += 1
+            if dev_bps > 200:
+                over_200 += 1
+    return {
+        "venues": names,
+        "samples": len(devs),
+        "devs": devs,
+        "over_50bps": over_50,
+        "over_100bps": over_100,
+        "over_200bps": over_200,
+        "chunks_ok": ok,
+        "chunks_failed": failed,
+    }
+
+
+def _pct(xs: list, p: float) -> float:
+    if not xs:
+        return 0.0
+    s = sorted(xs)
+    k = max(0, min(len(s) - 1, int(round((p / 100.0) * (len(s) - 1)))))
+    return s[k]
+
+
+def format_cross_venue(rep: dict, from_block: int, to_block: int) -> str:
+    devs = rep["devs"]
+    lines = [
+        f"Wild cross-venue consensus test — {' vs '.join(rep['venues'])} (USDC/WETH)",
+        f"blocks {from_block}..{to_block}",
+        "=" * 72,
+    ]
+    if not devs:
+        lines.append("no overlapping samples / RPC error")
+        return "\n".join(lines)
+    n = rep["samples"]
+    lines.append(f"{n} real cross-venue price samples")
+    lines.append(
+        f"  deviation (bps): p50={_pct(devs,50):.1f}  p99={_pct(devs,99):.1f}  "
+        f"p99.9={_pct(devs,99.9):.1f}  max={max(devs):.1f}"
+    )
+    lines.append(
+        f"  consensus guard would flag: @0.5%={rep['over_50bps']} ({rep['over_50bps']/n*100:.2f}%)"
+        f"  @1%={rep['over_100bps']} ({rep['over_100bps']/n*100:.2f}%)"
+        f"  @2%={rep['over_200bps']} ({rep['over_200bps']/n*100:.2f}%)"
+    )
+    lines.append(
+        "\nReading: two honest venues track each other to within arbitrage bounds;"
+    )
+    lines.append(
+        "the deviation distribution tells a protocol what consensus threshold is"
+    )
+    lines.append(
+        "safe (above the normal cross-venue spread, below a manipulation)."
+    )
+    return "\n".join(lines)
+
+
 def run(url: str | None = None, blocks: int = 3000, pools: dict | None = None) -> dict:
     url = url or os.environ.get("AEGIS_RPC_URL") or os.environ.get("ARCHIVE_RPC_URL")
     if not url:
