@@ -109,6 +109,13 @@ class WildStats:
         n = sum(1 for x in self.impacts if x > cap_bps)
         return n / self.swaps
 
+    def percentile(self, p: float) -> float:
+        if not self.impacts:
+            return 0.0
+        s = sorted(self.impacts)
+        k = max(0, min(len(s) - 1, int(round((p / 100.0) * (len(s) - 1)))))
+        return s[k]
+
 
 def scan_pool(url: str, name: str, pool: str, from_block: int, to_block: int,
               chunk: int = 400) -> WildStats:
@@ -171,12 +178,14 @@ def format_report(rep: dict) -> str:
     lines.append("=" * 72)
     total = 0
     total_blocked2 = 0
+    all_impacts: list = []
     for st in rep["results"]:
         if not st.swaps:
             lines.append(f"\n{st.pool}: no swaps / error")
             continue
         total += st.swaps
         total_blocked2 += st.blocked_2pct
+        all_impacts.extend(st.impacts)
         cov = ""
         if st.chunks_failed:
             cov = f" (coverage {st.chunks_ok}/{st.chunks_ok + st.chunks_failed} windows)"
@@ -187,7 +196,13 @@ def format_report(rep: dict) -> str:
             f"  @5%: {st.blocked_5pct}  @10%: {st.blocked_10pct}"
         )
     if total:
+        agg = WildStats(pool="ALL", impacts=all_impacts)
         lines.append("\n" + "-" * 72)
+        lines.append(
+            f"distribution of real price impact (bps): "
+            f"p50={agg.percentile(50):.1f}  p99={agg.percentile(99):.1f}  "
+            f"p99.9={agg.percentile(99.9):.1f}  max={max(all_impacts):.1f}"
+        )
         lines.append(
             f"TOTAL: {total} real swaps; a 2% impact cap would touch "
             f"{total_blocked2} ({total_blocked2/total*100:.2f}%) of genuine trades."
