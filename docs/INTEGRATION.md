@@ -48,6 +48,8 @@ reference scenarios show the pattern:
 | Single-venue price manipulation | `(priceA, priceB, priceC)` from independent venues | multi-source consensus (block when one venue is an outlier) |
 | Flash / single-block price manipulation | none — guard reads the pair's accumulators on-chain | Uniswap V2 time-weighted average (block when spot diverges from the TWAP) |
 | Vault-share donation / inflation (ERC4626 collateral) | `(currentPricePerShare)` | share-price growth cap (block a per-block spike; real yield is gradual) |
+| AMM-LP collateral over-valuation (pool skew) | `(claimedLpPrice, priceA, priceB, virtualPrice)` | min-of-underlyings × virtual price (skew can only lower it) |
+| Upward price spike used to borrow/mint | `(price)` | trailing-low ("pessimistic") floor — value at the recent minimum, not the spike |
 | Flash drain / sandwich setup (excessive trade footprint) | `(reserveIn, reserveOut, amountIn)` | price-impact cap (block a single swap that moves the pool past a bps threshold) |
 | Split / many-trade drain that evades a per-trade cap | `(reserveIn, reserveOut, amountIn)` | cumulative windowed footprint cap (stateful, per-caller) |
 
