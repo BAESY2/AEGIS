@@ -11,6 +11,7 @@ from . import analysis, registry
 ROOT = Path(__file__).resolve().parents[2]
 SCORING = ROOT / "scoring"
 LEADERBOARD_MD = ROOT / "LEADERBOARD.md"
+GENERALIZATION_SVG = ROOT / "docs" / "assets" / "generalization.svg"
 
 
 def _fmt(x: float) -> str:
@@ -109,4 +110,101 @@ def render_markdown(report: dict) -> str:
 def write_markdown(report: dict, path: Path | None = None) -> Path:
     path = path or LEADERBOARD_MD
     path.write_text(render_markdown(report))
+    return path
+
+
+# --------------------------------------------------------------------------- #
+# Data-driven results chart (committed SVG, embedded in the README)
+# --------------------------------------------------------------------------- #
+def render_generalization_svg(report: dict) -> str:
+    """A grouped bar chart of test (held-out) worst-case reward per scenario.
+
+    For each scenario it draws the best threshold family beside the structural
+    family, both evaluated on UNSEEN attackers — visualizing the headline:
+    structural defenses hold (~1.0) while threshold defenses collapse (~0.0).
+    """
+    scenarios = report["scenarios"]
+    n = len(scenarios)
+    pad_l, pad_t = 60, 70
+    group_w, gap = 170, 24
+    plot_h = 200
+    width = pad_l + n * group_w + 40
+    height = pad_t + plot_h + 80
+    bg, fg, muted = "#0d1117", "#e6edf3", "#8b949e"
+    green, red = "#3fb950", "#f85149"
+
+    def y_of(v):  # reward in [0,1] -> y pixel
+        return pad_t + plot_h - max(0.0, min(1.0, v)) * plot_h
+
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
+        f'viewBox="0 0 {width} {height}" font-family="ui-sans-serif, system-ui, -apple-system, '
+        f'Segoe UI, Roboto, Helvetica, Arial, sans-serif">',
+        f'<rect width="{width}" height="{height}" fill="{bg}"/>',
+        f'<text x="{width/2}" y="28" fill="{fg}" font-size="17" font-weight="700" '
+        f'text-anchor="middle">Generalization to unseen attackers</text>',
+        f'<text x="{width/2}" y="48" fill="{muted}" font-size="12" text-anchor="middle">'
+        f'test worst-case reward after training on a disjoint attacker set (higher is better)</text>',
+    ]
+    # axis gridlines at 0 / 0.5 / 1.0
+    for v in (0.0, 0.5, 1.0):
+        y = y_of(v)
+        parts.append(
+            f'<line x1="{pad_l}" y1="{y:.1f}" x2="{width-20}" y2="{y:.1f}" '
+            f'stroke="#30363d" stroke-width="1"/>'
+        )
+        parts.append(
+            f'<text x="{pad_l-8}" y="{y+4:.1f}" fill="{muted}" font-size="11" '
+            f'text-anchor="end">{v:.1f}</text>'
+        )
+
+    for i, (key, sc) in enumerate(scenarios.items()):
+        rows = sc["generalization"]["rows"]
+        thr = max((r for r in rows if not r["structural"]), key=lambda r: r["test"], default=None)
+        stru = max((r for r in rows if r["structural"]), key=lambda r: r["test"], default=None)
+        gx = pad_l + i * group_w + gap
+        bar_w = (group_w - 3 * gap) / 2
+        for j, (row, color, lbl) in enumerate(
+            [(thr, red, "threshold"), (stru, green, "structural")]
+        ):
+            if row is None:
+                continue
+            v = max(0.0, row["test"])
+            x = gx + j * (bar_w + gap)
+            y = y_of(v)
+            h = pad_t + plot_h - y
+            # a thin stub so a 0.0 bar is still visible
+            if h < 2:
+                h, y = 2, pad_t + plot_h - 2
+            parts.append(
+                f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_w:.1f}" height="{h:.1f}" '
+                f'rx="3" fill="{color}"/>'
+            )
+            parts.append(
+                f'<text x="{x+bar_w/2:.1f}" y="{y-6:.1f}" fill="{fg}" font-size="12" '
+                f'font-weight="700" text-anchor="middle">{row["test"]:.2f}</text>'
+            )
+            parts.append(
+                f'<text x="{x+bar_w/2:.1f}" y="{pad_t+plot_h+18:.1f}" fill="{muted}" '
+                f'font-size="11" text-anchor="middle">{lbl}</text>'
+            )
+        parts.append(
+            f'<text x="{gx + (group_w-gap)/2 - bar_w/2:.1f}" y="{pad_t+plot_h+40:.1f}" '
+            f'fill="{fg}" font-size="12" font-weight="600" text-anchor="middle">'
+            f'{sc["id"]} {key}</text>'
+        )
+
+    parts.append(
+        f'<text x="{width/2}" y="{height-12}" fill="{muted}" font-size="11" '
+        f'text-anchor="middle">Across four vulnerability classes, structural defenses '
+        f'generalize while threshold defenses collapse on unseen attackers.</text>'
+    )
+    parts.append("</svg>")
+    return "\n".join(parts)
+
+
+def write_generalization_svg(report: dict, path: Path | None = None) -> Path:
+    path = path or GENERALIZATION_SVG
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(render_generalization_svg(report))
     return path

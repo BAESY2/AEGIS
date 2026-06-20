@@ -111,10 +111,14 @@ def main(argv: list[str] | None = None) -> int:
         rep = report.build_full_report(cache)
         jp = report.write_json(rep)
         mp = report.write_markdown(rep)
+        sp = report.write_generalization_svg(rep)
         for sc in registry.all_scenarios():
             _print_leaderboard(sc, cache)
             _print_generalization(sc, cache)
-        print(f"\nwrote {jp.relative_to(report.ROOT)} and {mp.relative_to(report.ROOT)}")
+        print(
+            f"\nwrote {jp.relative_to(report.ROOT)}, {mp.relative_to(report.ROOT)}, "
+            f"and {sp.relative_to(report.ROOT)}"
+        )
         return 0
 
     if args.cmd == "verify":

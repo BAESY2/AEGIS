@@ -70,6 +70,16 @@ class TestReportRendering(unittest.TestCase):
         self.assertIn("Generalization to unseen attackers", md)
         self.assertIn("generalizes", md)
 
+    def test_generalization_svg_is_well_formed(self):
+        import xml.dom.minidom
+
+        svg = report.render_generalization_svg(self._fake_report())
+        self.assertTrue(svg.startswith("<svg"))
+        # parses as XML and mentions the scenario
+        xml.dom.minidom.parseString(svg)
+        self.assertIn("Generalization to unseen attackers", svg)
+        self.assertIn("demo", svg)
+
 
 if __name__ == "__main__":
     unittest.main()
