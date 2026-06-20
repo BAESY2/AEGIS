@@ -31,7 +31,9 @@ outcome the EVM itself certifies — funds saved, with no human labels.
 > on archive state, but it fires the guard's *signal*, not a full attacker-
 > calldata replay); and the "swarm" is a direction, not a shipped implementation.
 > The honest threat model is in [`docs/LIMITATIONS.md`](./docs/LIMITATIONS.md) —
-> the methodology is the contribution, not a guarantee.
+> the methodology is the contribution, not a guarantee. For the results that
+> **are** measured on real mainnet data (a real exploit caught, false-positive
+> rates on real traffic), see [`docs/WILD.md`](./docs/WILD.md).
 
 The sharpest question a defense benchmark can answer is **generalization**: a
 defense tuned against the attacks you've *seen* — does it hold against the ones
