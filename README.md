@@ -62,7 +62,10 @@ Reproduce it in one command: `cd aegis-gym && python3 -m aegis generalize`.
 
 3. **The asset compounds.** Every defense submitted and every scenario added
    accumulates a corpus of attack/defense trajectories — the durable, hard-to-
-   replicate moat, owned by the range rather than any single defender.
+   replicate moat, owned by the range rather than any single defender. This is
+   concrete, not aspirational: every matchup scored on the EVM is appended to a
+   trajectory ledger (`scoring/trajectories.jsonl`); summarize it with
+   `python3 -m aegis trajectories`.
 
 ## Quickstart
 

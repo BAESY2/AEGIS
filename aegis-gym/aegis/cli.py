@@ -80,6 +80,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("list", help="list registered scenarios")
     sub.add_parser("bench", help="full leaderboard + generalization -> JSON + LEADERBOARD.md")
     sub.add_parser("verify", help="assert the benchmark invariants on the EVM (CI gate)")
+    sub.add_parser("trajectories", help="summarize the compounding trajectory ledger")
     for name in ("leaderboard", "generalize", "coevolve"):
         p = sub.add_parser(name)
         p.add_argument("scenario", nargs="?", default="all")
@@ -137,6 +138,22 @@ def main(argv: list[str] | None = None) -> int:
                       f"structural generalizes, threshold overfits")
         print("\nbenchmark invariants:", "PASS" if ok else "FAIL")
         return 0 if ok else 1
+
+    if args.cmd == "trajectories":
+        from . import trajectory
+
+        s = trajectory.summary()
+        print(f"trajectory ledger: {s['total_matchups']} matchups recorded")
+        if not s["scenarios"]:
+            print("  (empty — run `aegis bench` or `aegis score` to accumulate trajectories)")
+        for key, sc in s["scenarios"].items():
+            print(f"\n  {key}: {sc['matchups']} matchups")
+            for fam, f in sc["families"].items():
+                tag = "*" if f["structural"] else " "
+                rate = f["wins"] / f["n"] if f["n"] else 0.0
+                print(f"   {tag}{fam:<14} n={f['n']:<4} positive-reward rate={rate:.0%}")
+        print("\n(ledger: scoring/trajectories.jsonl — the compounding dataset asset)")
+        return 0
 
     if args.cmd == "leaderboard":
         for sc in _scenarios(args.scenario):

@@ -60,7 +60,12 @@ class Scenario:
         saved = d["saved_frac_1e18"] / 1e18
         fp = int(d["fp"])
         reward = d["reward_1e18"] / 1e18
-        return MatchResult(saved=saved, fp=fp, benign_total=self.benign_total, reward=reward)
+        result = MatchResult(saved=saved, fp=fp, benign_total=self.benign_total, reward=reward)
+        # Append to the compounding trajectory ledger (best-effort).
+        from . import trajectory
+
+        trajectory.log(self.key, config, attacker, result)
+        return result
 
 
 # --------------------------------------------------------------------------- #
