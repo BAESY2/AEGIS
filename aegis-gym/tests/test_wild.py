@@ -121,6 +121,15 @@ class TestCrossVenue(unittest.TestCase):
         self.assertIn("DEEP reference", out)
         self.assertIn("3 real cross-venue price samples", out)
 
+    def test_twap_report_formats(self):
+        rep = {"pool": "USDC/WETH", "samples": 5, "devs": [5.0, 10.0, 15.0, 20.0, 600.0],
+               "over_50bps": 1, "over_100bps": 1, "over_200bps": 1,
+               "window_blocks": 150, "chunks_ok": 1, "chunks_failed": 0}
+        out = wild.format_twap(rep, 1, 2)
+        self.assertIn("TWAP-guard test", out)
+        self.assertIn("5 real spot-vs-TWAP samples", out)
+        self.assertIn("~30-min trailing window", out)
+
 
 if __name__ == "__main__":
     unittest.main()
