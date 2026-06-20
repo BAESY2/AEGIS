@@ -70,7 +70,7 @@ Everything below runs from one dependency-free CLI; every number is EVM-verified
 | **Cross-class transfer** | defense-quality is class-specific (+17% gap) — breadth matters | `aegis transfer` |
 | **Robust / minimax** | optimal defense under unknown attacker; regret of not knowing | `aegis robust` |
 | **Pareto frontier** | structural classes collapse to one defense; behavioral is a real trade-off | `aegis pareto` |
-| **Forked-mainnet** | the oracle guards on live Uniswap V2 state | `make fork` |
+| **Forked-mainnet** | guards on live Uniswap V2 + real Chainlink ETH/USD, with a real executed swap | `make fork` |
 
 ## Why this exists
 
@@ -273,6 +273,13 @@ agent are documented in [docs/RL.md](./docs/RL.md).
    ```bash
    cd aegis-gym && python3 -m aegis score reentrancy yourdefense 2
    ```
+
+Even simpler — **submit without touching the registry**: drop your defense into
+`submissions/Submission.sol` and run `make submit` (or `python3 -m aegis submit`).
+The harness scores it across the reentrancy attacker grid and tells you your
+worst-case reward and where you'd rank. This is the local form of the hosted
+"submit a defense, get scored, climb the board" loop — and, run across many
+contributors, the mechanism that accumulates the multi-party dataset moat.
 
 Adding a whole new **vulnerability class** is one `Scenario(...)` entry in
 `aegis-gym/aegis/registry.py` plus its Solidity target/exploit/defenses — and it

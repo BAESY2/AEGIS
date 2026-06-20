@@ -1,5 +1,5 @@
 # Aegis — common tasks
-.PHONY: install build test fork fmt bench leaderboard verify trajectories space dataset classify recommend rl-train learn coevolve frontier oracle generalize clean
+.PHONY: install build test fork fmt bench leaderboard verify trajectories space dataset classify recommend submit serve rl-train learn coevolve frontier oracle generalize clean
 
 install:
 	forge install foundry-rs/forge-std --no-commit || true
@@ -53,6 +53,14 @@ classify:
 # recommend the defense to deploy for a scenario (the advisory product surface)
 recommend:
 	cd aegis-gym && python3 -m aegis recommend reentrancy
+
+# score YOUR defense (submissions/Submission.sol) and see your rank
+submit:
+	cd aegis-gym && python3 -m aegis submit reentrancy
+
+# run the hosted-leaderboard backend scaffold (stdlib only)
+serve:
+	python3 server/app.py
 
 # continuous policy-gradient agent: learns a robust (window, cap) breaker from
 # the verifiable worst-case reward (writes scoring/training.json)

@@ -1,0 +1,55 @@
+name: submission
+
+# When a PR changes submissions/Submission.sol, score the submitted defense on
+# the EVM and post the contributor's worst-case reward and leaderboard rank as a
+# comment. This is the live, GitHub-native form of "submit a defense, get scored,
+# climb the board" — and the mechanism that accumulates multi-party submissions.
+
+on:
+  pull_request:
+    paths:
+      - "submissions/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  score-submission:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - run: forge install foundry-rs/forge-std --no-commit || true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Score the submitted defense
+        id: score
+        run: |
+          cd aegis-gym
+          python3 -m aegis submit reentrancy | tee /tmp/submission.txt
+
+      - name: Comment the score on the PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- aegis-submission -->';
+            let out = '(scoring failed)';
+            try { out = fs.readFileSync('/tmp/submission.txt', 'utf8'); } catch (e) {}
+            const body = `${marker}\n### 🛡️ Your defense, scored\n\n\`\`\`\n${out}\n\`\`\`\n`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
