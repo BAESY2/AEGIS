@@ -48,6 +48,12 @@ reference scenarios show the pattern:
 | Single-venue price manipulation | `(priceA, priceB, priceC)` from independent venues | multi-source consensus (block when one venue is an outlier) |
 | Flash / single-block price manipulation | none — guard reads the pair's accumulators on-chain | Uniswap V2 time-weighted average (block when spot diverges from the TWAP) |
 | Flash drain / sandwich setup (excessive trade footprint) | `(reserveIn, reserveOut, amountIn)` | price-impact cap (block a single swap that moves the pool past a bps threshold) |
+| Split / many-trade drain that evades a per-trade cap | `(reserveIn, reserveOut, amountIn)` | cumulative windowed footprint cap (stateful, per-caller) |
+
+> Per-*trade* caps are evaded by splitting a drain into sub-cap trades — see
+> `test/SplitTradeEvasion.t.sol`, where 30 sub-cap trades drain 23% of a pool. The
+> stateful `CumulativeImpactGuard` is a drop-in (same `ctx`) that caps a caller's
+> *cumulative* footprint over a rolling window and halts the split attack early.
 | MEV / sandwich on a swap | `(outputAtSpot, outputAtReference)` | block when realized output << an independent reference (same mechanism as oracle) |
 | Broken access control | `(admin)` | caller-is-admin authorization invariant |
 | Flash-loan governance | `(priorVotes, currentVotes)` | snapshot: votes backed by prior-block holdings |
