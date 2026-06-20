@@ -25,6 +25,14 @@ outcome the EVM itself certifies — funds saved, with no human labels.
 
 ## TL;DR — the result that matters
 
+> **Read this first:** the headline generalization result is a *constructed
+> demonstration* on clean models, not field evidence; the fork tests use a
+> synthetic manipulating swap, not a historical-exploit replay (archive state
+> required, unavailable on public RPCs); and the "swarm" is a direction, not a
+> shipped implementation. The honest threat model is in
+> [`docs/LIMITATIONS.md`](./docs/LIMITATIONS.md) — the methodology is the
+> contribution, not a guarantee.
+
 The sharpest question a defense benchmark can answer is **generalization**: a
 defense tuned against the attacks you've *seen* — does it hold against the ones
 you *haven't*? Aegis makes that measurable, and the answer is consistent across
