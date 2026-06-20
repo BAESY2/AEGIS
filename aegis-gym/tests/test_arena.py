@@ -32,6 +32,15 @@ class TestArena(unittest.TestCase):
         out = arena.format_report(arena.generalization_study(seed=0))
         self.assertIn("Swarm training generalizes", out)
 
+    def test_real_data_training_separates_cleanly(self):
+        # trained on the committed REAL mainnet swap distribution + real attacks
+        r = arena.real_data_study()
+        self.assertGreater(r["n_benign"], 100)          # hundreds of real swaps
+        self.assertEqual(r["false_positive_rate"], 0.0)  # no real swap is blocked
+        self.assertEqual(r["attack_recall"], 1.0)        # every real attack is caught
+        self.assertGreater(r["margin_x"], 5)             # wide real separation
+        self.assertIn("REAL mainnet data", arena.format_real(r))
+
     def test_adaptive_policy_beats_fixed_cap(self):
         for seed in range(3):
             r = arena.adaptive_study(seed=seed)
