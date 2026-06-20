@@ -27,6 +27,21 @@ def build_full_report(cache: analysis.ScoreCache | None = None) -> dict:
     for sc in registry.all_scenarios():
         rows = analysis.leaderboard(sc, cache)
         gen_rows, train, test = analysis.generalization(sc, cache)
+        # co-evolve the first threshold (non-structural) family, if any
+        coevo = None
+        thr_family = next(
+            (n for n, fam in sc.families.items() if not fam[0].structural), None
+        )
+        if thr_family is not None:
+            c = analysis.coevolve(sc, thr_family, cache)
+            coevo = {
+                "family": thr_family,
+                "naive": c["naive"].label,
+                "naive_worstcase_saved": c["naive_worstcase_saved"],
+                "coevolved": c["coevolved"].label,
+                "coevolved_worstcase_saved": c["coevolved_worstcase_saved"],
+                "rounds": len(c["history"]),
+            }
         report["scenarios"][sc.key] = {
             "id": sc.id,
             "title": sc.title,
@@ -40,6 +55,7 @@ def build_full_report(cache: analysis.ScoreCache | None = None) -> dict:
                 "test": test,
                 "rows": [asdict(r) for r in gen_rows],
             },
+            "coevolution": coevo,
         }
     return report
 
@@ -96,6 +112,16 @@ def render_markdown(report: dict) -> str:
             out.append(
                 f"| {r['family']} | {r['trained_label']} | {_fmt(r['train'])} | "
                 f"{_fmt(r['test'])} | {_fmt(r['gap'])} | {verdict} |"
+            )
+
+        co = sc.get("coevolution")
+        if co:
+            out.append(
+                f"\n**Co-evolution ({co['family']}, {co['rounds']} rounds).** "
+                f"A defender tuned only on the fast attacker — {co['naive']} — saves "
+                f"**{co['naive_worstcase_saved']:.2f}** worst-case over the full grid; "
+                f"the co-evolved defender — {co['coevolved']} — saves "
+                f"**{co['coevolved_worstcase_saved']:.2f}**.\n"
             )
 
     out.append(

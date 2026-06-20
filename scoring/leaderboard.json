@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-06-20T02:58:17Z",
+  "generated_utc": "2026-06-20T03:30:56Z",
   "scenarios": {
     "reentrancy": {
       "id": "01",
@@ -136,6 +136,14 @@
             "gap": 0.0
           }
         ]
+      },
+      "coevolution": {
+        "family": "rate-based",
+        "naive": "WindowedRateLimit(w=1, cap=5)",
+        "naive_worstcase_saved": 0.0,
+        "coevolved": "WindowedRateLimit(w=8, cap=3)",
+        "coevolved_worstcase_saved": 0.5,
+        "rounds": 3
       }
     },
     "oracle": {
@@ -271,6 +279,14 @@
             "gap": 0.0
           }
         ]
+      },
+      "coevolution": {
+        "family": "fixed-anchor",
+        "naive": "PriceDeviationGuard(<= 609bps)",
+        "naive_worstcase_saved": 0.0,
+        "coevolved": "PriceDeviationGuard(<= 300bps)",
+        "coevolved_worstcase_saved": 1.0,
+        "rounds": 2
       }
     },
     "access": {
@@ -397,6 +413,14 @@
             "gap": 0.0
           }
         ]
+      },
+      "coevolution": {
+        "family": "rate-based",
+        "naive": "WindowedRateLimit(w=1, cap=5)",
+        "naive_worstcase_saved": 0.0,
+        "coevolved": "WindowedRateLimit(w=8, cap=3)",
+        "coevolved_worstcase_saved": 0.4,
+        "rounds": 3
       }
     },
     "governance": {
@@ -499,6 +523,14 @@
             "gap": 0.0
           }
         ]
+      },
+      "coevolution": {
+        "family": "vote-cap",
+        "naive": "MaxVotesGuard(<= 250)",
+        "naive_worstcase_saved": 0.0,
+        "coevolved": "MaxVotesGuard(<= 250)",
+        "coevolved_worstcase_saved": 0.0,
+        "rounds": 2
       }
     }
   }
