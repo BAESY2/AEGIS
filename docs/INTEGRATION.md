@@ -100,7 +100,13 @@ deployment's conditions.
 
 - *Does it add risk?* The hook only ever **blocks** an action; it cannot move
   funds or change your logic.
-- *Gas?* One external call to a small contract; structural guards are O(1).
+- *Gas?* Measured per `authorize` call (`test/GasBench.t.sol`): stateless guards
+  (price-impact, consensus) cost ~3–4k gas; the TWAP guard adds external
+  `STATICCALL`s to the pair; the **stateful** `CumulativeImpactGuard` costs ~70k
+  on the first trade of a window per caller (cold `SSTORE`s) and ~3.8k warm.
+  Weigh the stateful per-trade cost for a high-throughput path. See
+  [`docs/LIMITATIONS.md`](./LIMITATIONS.md) — these are reference implementations,
+  not gas-golfed or audited.
 - *False positives?* That is exactly what the reward penalizes — every defense is
   ranked by precision (`funds saved − false-positive rate`), so a defense that
   blocks legitimate users scores poorly and won't top the board.
