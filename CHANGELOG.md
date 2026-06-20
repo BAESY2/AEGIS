@@ -3,7 +3,41 @@
 All notable changes to Aegis. The benchmark task itself is versioned separately
 in [BENCHMARK.md](./BENCHMARK.md) so scores stay comparable over time.
 
-## [Unreleased]
+## [0.4] — submission loop, real-data Chainlink class, hosted backend
+
+### Added
+- **Defense submission harness**: drop a defense into `submissions/Submission.sol`
+  and `aegis submit` (or `make submit`) scores it across a scenario's attacker
+  grid and reports your worst-case reward and leaderboard rank — no registry edits.
+- **GitHub-native submission**: `.github/workflows/submission.yml` auto-scores a
+  `submissions/` PR and comments the rank.
+- **ForkChainlink** real-data class: `ChainlinkReferenceGuard` blocks when a
+  manipulable spot diverges from an **independent** trusted oracle. The fork test
+  reads the live Chainlink ETH/USD feed and Uniswap spot, executes a real swap to
+  crash the spot, and shows the guard blocks the manipulated price.
+- **Hosted-leaderboard backend scaffold** (`server/app.py`, stdlib only):
+  `/health`, `/leaderboard`, `/submissions`, `/score`; submitted-code execution
+  is disabled by default and gated behind a sandbox flag.
+
+## [0.3] — combinatorial space, a no-free-lunch class, forked-mainnet, honest analyses
+
+### Added
+- **Scenario 05 — no-free-lunch frontier**: a stolen-key drain where the
+  authorization invariant is useless and no defense reaches perfect recall at
+  zero false positives.
+- **Forked-mainnet**: `ForkOracle` (live Uniswap V2 reserves + computed
+  manipulation) and `ForkSwap` (executes a real swap on the live pool, moving the
+  on-chain price). Both skip without an RPC.
+- **Composition** (`CompositeDefense`) as a first-class primitive (2^N stacks) and
+  `aegis space` quantifying the configuration space at ~1.1 × 10^10 matchups.
+- **Analyses** (each with an honest result): `aegis transfer` (cross-class gap
+  +17%), `aegis robust` (minimax + regret), `aegis pareto` (frontier), `aegis
+  explore` (active learning, honestly reported as a marginal lever), and an MLP
+  learner option.
+- Dataset grown to 2,300+ EVM-verified labels; paper Addendum II; README
+  at-a-glance index.
+
+## [0.2] — four-class benchmark, unified CLI, RL stack, dataset
 
 ### Added
 - **Benchmark v0.2 — four vulnerability classes** under one declarative registry:
