@@ -134,6 +134,9 @@ def main(argv: list[str] | None = None) -> int:
     ph.add_argument("--source", default=None, help="instead: fetch verified source for this address (Sourcify) and flag manipulable oracle reads")
     ph.add_argument("--chain", type=int, default=1, help="chain id for --source")
 
+    par = sub.add_parser("arena", help="population (swarm) co-evolution: do swarm-trained defenses generalize vs single-threat tuning?")
+    par.add_argument("--seed", type=int, default=0)
+
     pe = sub.add_parser("explore", help="active learning: query the most uncertain points")
     pe.add_argument("--acquire", type=int, default=0, help="score N uncertain points on the EVM and add them")
     pe.add_argument("--scenario", default=None, help="restrict the experiment to one class (e.g. behavioral)")
@@ -325,6 +328,12 @@ def main(argv: list[str] | None = None) -> int:
 
         r = dex.coevolve(per_trade_bps=args.per_trade_bps, benign_bps=args.benign_bps)
         print(dex.format_report(r))
+        return 0
+
+    if args.cmd == "arena":
+        from . import arena
+
+        print(arena.format_report(arena.generalization_study(seed=args.seed)))
         return 0
 
     if args.cmd == "hunt":
