@@ -158,6 +158,31 @@ attacker in the family. The structural defense tops every scenario. The task is
 pinned as a frozen, versioned spec in [BENCHMARK.md](./BENCHMARK.md) so scores
 stay comparable over time (the SWE-bench model).
 
+## "Four scenarios" is the seed of a ~10^10 space
+
+A handful of hand-written scenarios undersells what is being measured. Once you
+count parameter ranges, attacker strengths, and — above all — **defense
+compositions** (`CompositeDefense` stacks any subset of compatible primitives, so
+N primitives give 2^N defense-in-depth stacks), the number of distinct,
+EVM-scorable matchups is enormous. `python3 -m aegis space` computes it from
+explicit, auditable cardinalities:
+
+```
+scenario        singletons   composites  attackers        matchups
+reentrancy           4,098       28,676         64       1,835,264
+oracle               4,000    8,004,000      1,000   8,004,000,000
+access               4,097       12,289         64         786,496
+governance          10,001       30,001    100,000   3,000,100,000
+behavioral             129       16,769        100       1,676,900
+TOTAL                                               ~1.1 x 10^10
+```
+
+The shipped dataset samples ~1,500 of these (~10^-7 of the space). The value is
+not the four targets — it is the **~10^10-point space they generate and the
+engine that scores any point of it on the EVM.** Composition is real and
+non-trivial: stacking a perfect structural defense with a rate limit *lowers*
+reward (1.00 → 0.75) because the stack inherits the limiter's false positives.
+
 ## The core abstraction
 
 A **Scenario** = a vulnerable `Target`, a verified exploit `Attack`, and a

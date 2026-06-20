@@ -8,6 +8,7 @@ import {PatientReentrancyAttacker} from "../src/scenarios/reentrancy/PatientReen
 import {WindowedRateLimitDefense} from "../src/defenses/WindowedRateLimitDefense.sol";
 import {PerAddressInvariantDefense} from "../src/defenses/PerAddressInvariantDefense.sol";
 import {ReentrancyLockDefense} from "../src/defenses/ReentrancyLockDefense.sol";
+import {CompositeDefense} from "../src/defenses/CompositeDefense.sol";
 import {IDefense} from "../src/interfaces/IDefense.sol";
 
 /// @notice Env-driven co-evolution matchup scorer. Evaluates one
@@ -21,19 +22,46 @@ contract Matchup is Test {
     uint256 constant BENIGN_TOTAL = 4;
     uint256 constant SPACING = 16; // legit events land in separate windows
 
-    /// Build the defense under test. AEGIS_DEF selects the family:
-    ///   "windowed" (default) -> WindowedRateLimitDefense(window, cap)  [rate]
-    ///   "peraddr"            -> PerAddressInvariantDefense()           [structural]
-    ///   "lock"               -> ReentrancyLockDefense()                [structural]
-    function _buildDefense(uint256 W, uint256 cap) internal returns (IDefense) {
-        bytes32 kind = keccak256(bytes(vm.envOr("AEGIS_DEF", string("windowed"))));
-        if (kind == keccak256("peraddr")) {
-            return new PerAddressInvariantDefense();
-        }
-        if (kind == keccak256("lock")) {
-            return new ReentrancyLockDefense();
-        }
+    /// Build the defense under test. AEGIS_DEF selects the family, and may be a
+    /// '+'-joined COMPOSITE (defense-in-depth) of compatible primitives:
+    ///   "windowed" -> WindowedRateLimitDefense(window, cap)  [rate]
+    ///   "peraddr"  -> PerAddressInvariantDefense()           [structural]
+    ///   "lock"     -> ReentrancyLockDefense()                [structural]
+    ///   e.g. "windowed+peraddr" -> CompositeDefense([rate, structural], requireAll)
+    /// The 2^N stacks of N primitives are what make the configuration space
+    /// combinatorial (see `aegis space`).
+    function _member(string memory kind, uint256 W, uint256 cap) internal returns (IDefense) {
+        bytes32 k = keccak256(bytes(kind));
+        if (k == keccak256("peraddr")) return new PerAddressInvariantDefense();
+        if (k == keccak256("lock")) return new ReentrancyLockDefense();
         return new WindowedRateLimitDefense(W, cap);
+    }
+
+    function _buildDefense(uint256 W, uint256 cap) internal returns (IDefense) {
+        string[] memory parts = _split(vm.envOr("AEGIS_DEF", string("windowed")), "+");
+        if (parts.length == 1) return _member(parts[0], W, cap);
+        IDefense[] memory ms = new IDefense[](parts.length);
+        for (uint256 i = 0; i < parts.length; i++) ms[i] = _member(parts[i], W, cap);
+        return new CompositeDefense(ms, true); // defense-in-depth: block if any blocks
+    }
+
+    function _split(string memory s, bytes1 sep) internal pure returns (string[] memory parts) {
+        bytes memory b = bytes(s);
+        uint256 count = 1;
+        for (uint256 i = 0; i < b.length; i++) {
+            if (b[i] == sep) count++;
+        }
+        parts = new string[](count);
+        uint256 start = 0;
+        uint256 idx = 0;
+        for (uint256 i = 0; i <= b.length; i++) {
+            if (i == b.length || b[i] == sep) {
+                bytes memory part = new bytes(i - start);
+                for (uint256 j = start; j < i; j++) part[j - start] = b[j];
+                parts[idx++] = string(part);
+                start = i + 1;
+            }
+        }
     }
 
     function _savedFraction(uint256 W, uint256 cap, uint256 take, uint256 horizon)

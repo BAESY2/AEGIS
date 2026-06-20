@@ -81,6 +81,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("bench", help="full leaderboard + generalization -> JSON + LEADERBOARD.md")
     sub.add_parser("verify", help="assert the benchmark invariants on the EVM (CI gate)")
     sub.add_parser("trajectories", help="summarize the compounding trajectory ledger")
+    sub.add_parser("space", help="quantify the combinatorial size of the configuration space")
     for name in ("leaderboard", "generalize", "coevolve"):
         p = sub.add_parser(name)
         p.add_argument("scenario", nargs="?", default="all")
@@ -168,6 +169,31 @@ def main(argv: list[str] | None = None) -> int:
                 rate = f["wins"] / f["n"] if f["n"] else 0.0
                 print(f"   {tag}{fam:<14} n={f['n']:<4} positive-reward rate={rate:.0%}")
         print("\n(ledger: scoring/trajectories.jsonl — the compounding dataset asset)")
+        return 0
+
+    if args.cmd == "space":
+        from . import space, sweep
+
+        rep = space.report(dataset_size=len(sweep.read()))
+        print("Combinatorial configuration space (distinct EVM-scorable matchups):\n")
+        print(f"  {'scenario':<14}{'singletons':>12}{'composites':>13}{'attackers':>11}{'matchups':>16}")
+        print("  " + "-" * 64)
+        for r in rep["rows"]:
+            print(
+                f"  {r['scenario']:<14}{r['singleton_defenses']:>12,}{r['composite_defenses']:>13,}"
+                f"{r['attacker_strengths']:>11,}{r['matchups']:>16,}"
+            )
+        print("  " + "-" * 64)
+        total = rep["total_matchups"]
+        print(f"  {'TOTAL':<14}{'':>12}{'':>13}{'':>11}{total:>16,}")
+        print(f"\n  ≈ 10^{rep['log10']:.1f}  ({total:.2e}) distinct matchups, driven by "
+              f"parameter ranges and 2^N defense compositions.")
+        if rep["dataset_size"]:
+            print(
+                f"  shipped dataset samples {rep['dataset_size']:,} of them "
+                f"(~{rep['coverage_fraction']:.1e} of the space)."
+            )
+        print("  -> '4 scenarios' is the seed of a ~10^N space, not the space itself.")
         return 0
 
     if args.cmd == "leaderboard":
