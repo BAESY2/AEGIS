@@ -127,6 +127,11 @@ def main(argv: list[str] | None = None) -> int:
     pw.add_argument("--twap", action="store_true", help="TWAP-guard false-positive test (spot vs a real trailing TWAP)")
     pw.add_argument("--window", type=int, default=150, help="TWAP trailing window in blocks")
 
+    ph = sub.add_parser("hunt", help="oracle risk: capital to manipulate a pool vs the value it secures")
+    ph.add_argument("--liquidity-usd", type=float, required=True, help="moved-side pool liquidity in USD")
+    ph.add_argument("--secures", type=float, required=True, help="value the oracle secures in USD")
+    ph.add_argument("--move", type=float, default=2.0, help="price move factor an attack needs (2.0 = double)")
+
     pe = sub.add_parser("explore", help="active learning: query the most uncertain points")
     pe.add_argument("--acquire", type=int, default=0, help="score N uncertain points on the EVM and add them")
     pe.add_argument("--scenario", default=None, help="restrict the experiment to one class (e.g. behavioral)")
@@ -318,6 +323,13 @@ def main(argv: list[str] | None = None) -> int:
 
         r = dex.coevolve(per_trade_bps=args.per_trade_bps, benign_bps=args.benign_bps)
         print(dex.format_report(r))
+        return 0
+
+    if args.cmd == "hunt":
+        from . import hunt
+
+        a = hunt.assess(args.liquidity_usd, args.secures, args.move)
+        print(hunt.format_assessment("pool", a))
         return 0
 
     if args.cmd == "wild":
