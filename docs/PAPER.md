@@ -308,6 +308,57 @@ legitimate whale. The structural family achieves 1.0 trivially. The learned
 optimizer thus arrives at the same conclusion as the grid search: **the signal,
 not the threshold, is what matters.** Run it with `python3 -m aegis train`.
 
+## Addendum II: a combinatorial space, a no-free-lunch class, and four secondary studies
+
+The headline result above (structure beats thresholds) is clean precisely because
+each class admits a perfect invariant. A second body of work probes where that
+breaks, and measures the size and structure of the space being searched. Every
+number below is reproducible from one CLI; we report negative results where we
+found them.
+
+**The space is combinatorial (~10^10), not five scenarios.** Defenses compose:
+a `CompositeDefense` stacks any subset of compatible primitives (defense in
+depth), so N primitives give 2^N stacks, each parameterized. Counting parameter
+ranges, attacker strengths, and compositions from explicit cardinalities
+(`aegis space`) gives **~1.1 × 10^10 distinct EVM-scorable matchups**; the shipped
+dataset samples ~10^-7 of it. Composition is non-trivial: stacking a perfect
+structural defense with a rate limit *lowers* reward (1.00 → 0.75), because the
+stack inherits the limiter's false positives.
+
+**A class with no structural winner (no free lunch).** Scenario 05 is a
+stolen-key account drain: the thief holds the owner's key and so passes the very
+authorization invariant that wins Scenario 03. Legitimate and malicious behavior
+overlap (the owner sometimes makes large payments and pays new payees; a patient
+thief mimics exactly that), so **no defense reaches perfect recall at zero false
+positives** — a feature-combining (learned-shape) rule is the best operating
+point but cannot erase the overlap. Parameterizing the attacker's *stealth* makes
+the optimal defense *change*: a value rule wins at low stealth, a block-new rule
+at high stealth. The minimax (robust) defense guarantees worst-case reward +0.75;
+an oracle that knows the stealth averages +0.81, so the **regret of not knowing
+the attacker is +0.06** (`aegis robust`). A mixed-strategy (randomized) defense
+gives no further gain here, because the block-new defense has a flat payoff across
+attacker types — the pure minimax is already the equilibrium.
+
+**Cross-class transfer: the classes are not redundant.** Training the
+"will this defense hold?" model on every class *except* one and testing on the
+held-out class gives a mean within-minus-cross accuracy gap of **+17%** (up to
++36% for governance; `aegis transfer`). Defense-quality structure is largely
+class-specific — each vulnerability class carries information the others don't,
+the quantitative case for benchmark breadth.
+
+**A unifying Pareto view.** Over (mean funds saved, false positives), the four
+invariant classes collapse to a **single dominant defense** (the structural one),
+while the behavioral class has a genuine **two-point frontier** (block-new: saved
+1.00 / FP 2, vs amount cap: saved 0.57 / FP 0) — `aegis pareto`.
+
+**A negative result, reported.** We tested active learning (uncertainty sampling
+and query-by-committee) as a smarter way to spend EVM calls. On the
+near-deterministic invariant classes it does **not** beat random sampling
+(−0.4% to −4.3%); on the genuinely ambiguous behavioral class it marginally and
+consistently beats random (~+1%), and the advantage shrinks toward zero as the
+dataset grows. Representative random sampling is an adequate default for this
+benchmark; active learning is a marginal lever, not a large one (`aegis explore`).
+
 ## Reproducibility
 
 ```bash

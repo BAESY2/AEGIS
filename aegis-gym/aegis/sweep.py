@@ -41,6 +41,38 @@ class Space:
     families: list[dict]  # each: {name, structural, sample(rng)->env-dict}
 
 
+_STRUCTURAL_TOKENS = ("peraddr", "lock", "owneronly", "snapshot", "lagged")
+
+
+def _reentrancy_composite(r) -> dict:
+    """Sample a random multi-member defense-in-depth stack (a 2^N composite)."""
+    prims = ["windowed", "peraddr", "lock"]
+    k = r.randint(2, 3)
+    subset = r.sample(prims, k)
+    env = {"AEGIS_DEF": "+".join(subset)}
+    if "windowed" in subset:
+        env["AEGIS_WINDOW"] = r.randint(1, 12)
+        env["AEGIS_CAP"] = r.randint(1, 12)
+    return env
+
+
+def _behavioral_composite(r) -> dict:
+    prims = ["amount", "behavioral", "newdest"]
+    k = r.randint(2, 3)
+    subset = r.sample(prims, k)
+    env = {"AEGIS_DEF": "+".join(subset)}
+    if "amount" in subset:
+        env["AEGIS_CAP"] = r.randint(1, 5)
+    if "behavioral" in subset:
+        env["AEGIS_MAT"] = r.randint(1, 5)
+    return env
+
+
+def _is_structural(env: dict) -> bool:
+    spec = str(env.get("AEGIS_DEF", "")) + str(env.get("AEGIS_GUARD", ""))
+    return any(tok in spec for tok in _STRUCTURAL_TOKENS)
+
+
 def _spaces() -> list[Space]:
     return [
         Space(
@@ -64,6 +96,11 @@ def _spaces() -> list[Space]:
                     "name": "behavioral",
                     "structural": True,
                     "sample": lambda r: {"AEGIS_DEF": r.choice(["peraddr", "lock"])},
+                },
+                {
+                    "name": "composite",
+                    "structural": False,  # refined per-sample from the actual stack
+                    "sample": _reentrancy_composite,
                 },
             ],
         ),
@@ -131,6 +168,37 @@ def _spaces() -> list[Space]:
                 },
             ],
         ),
+        # The hard-label class: ambiguous, non-monotonic, no structural winner.
+        Space(
+            scenario="behavioral",
+            match_test="test_matchup05",
+            json_file="matchup05.json",
+            attacker_knob="AEGIS_STEALTH",
+            attackers=[0, 15, 30, 45, 60, 75, 90, 100],
+            static_env={},
+            families=[
+                {
+                    "name": "amount",
+                    "structural": False,
+                    "sample": lambda r: {"AEGIS_DEF": "amount", "AEGIS_CAP": r.randint(1, 5)},
+                },
+                {
+                    "name": "behavioral",
+                    "structural": False,
+                    "sample": lambda r: {"AEGIS_DEF": "behavioral", "AEGIS_MAT": r.randint(1, 5)},
+                },
+                {
+                    "name": "newdest",
+                    "structural": False,
+                    "sample": lambda r: {"AEGIS_DEF": "newdest"},
+                },
+                {
+                    "name": "composite",
+                    "structural": False,
+                    "sample": _behavioral_composite,
+                },
+            ],
+        ),
     ]
 
 
@@ -182,7 +250,9 @@ def sweep(budget: int = 200, seed: int = 0, on_progress: Callable[[int, int], No
                 "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "scenario": space.scenario,
                 "family": fam["name"],
-                "structural": fam["structural"],
+                # composites mix families; label structural if the stack contains
+                # an invariant member.
+                "structural": fam["structural"] or _is_structural(params),
                 "params": params,
                 "attacker": attacker,
                 "saved": round(d["saved_frac_1e18"] / 1e18, 4),

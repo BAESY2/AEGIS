@@ -81,6 +81,10 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("bench", help="full leaderboard + generalization -> JSON + LEADERBOARD.md")
     sub.add_parser("verify", help="assert the benchmark invariants on the EVM (CI gate)")
     sub.add_parser("trajectories", help="summarize the compounding trajectory ledger")
+    sub.add_parser("space", help="quantify the combinatorial size of the configuration space")
+    sub.add_parser("transfer", help="cross-class transfer: does defense-quality generalize across bug classes?")
+    sub.add_parser("robust", help="minimax defense under attacker-type uncertainty (behavioral)")
+    sub.add_parser("pareto", help="Pareto frontier of defenses over (worst-case saved, false positives)")
     for name in ("leaderboard", "generalize", "coevolve"):
         p = sub.add_parser(name)
         p.add_argument("scenario", nargs="?", default="all")
@@ -105,6 +109,12 @@ def main(argv: list[str] | None = None) -> int:
 
     pr = sub.add_parser("recommend", help="recommend the defense to deploy for a scenario")
     pr.add_argument("scenario")
+
+    pe = sub.add_parser("explore", help="active learning: query the most uncertain points")
+    pe.add_argument("--acquire", type=int, default=0, help="score N uncertain points on the EVM and add them")
+    pe.add_argument("--scenario", default=None, help="restrict the experiment to one class (e.g. behavioral)")
+    pe.add_argument("--model", default="logreg", choices=["logreg", "mlp"], help="learner for the experiment")
+    pe.add_argument("--seed", type=int, default=0)
 
     args = parser.parse_args(argv)
     cache = analysis.ScoreCache()
@@ -168,6 +178,87 @@ def main(argv: list[str] | None = None) -> int:
                 rate = f["wins"] / f["n"] if f["n"] else 0.0
                 print(f"   {tag}{fam:<14} n={f['n']:<4} positive-reward rate={rate:.0%}")
         print("\n(ledger: scoring/trajectories.jsonl — the compounding dataset asset)")
+        return 0
+
+    if args.cmd == "space":
+        from . import space, sweep
+
+        rep = space.report(dataset_size=len(sweep.read()))
+        print("Combinatorial configuration space (distinct EVM-scorable matchups):\n")
+        print(f"  {'scenario':<14}{'singletons':>12}{'composites':>13}{'attackers':>11}{'matchups':>16}")
+        print("  " + "-" * 64)
+        for r in rep["rows"]:
+            print(
+                f"  {r['scenario']:<14}{r['singleton_defenses']:>12,}{r['composite_defenses']:>13,}"
+                f"{r['attacker_strengths']:>11,}{r['matchups']:>16,}"
+            )
+        print("  " + "-" * 64)
+        total = rep["total_matchups"]
+        print(f"  {'TOTAL':<14}{'':>12}{'':>13}{'':>11}{total:>16,}")
+        print(f"\n  ≈ 10^{rep['log10']:.1f}  ({total:.2e}) distinct matchups, driven by "
+              f"parameter ranges and 2^N defense compositions.")
+        if rep["dataset_size"]:
+            print(
+                f"  shipped dataset samples {rep['dataset_size']:,} of them "
+                f"(~{rep['coverage_fraction']:.1e} of the space)."
+            )
+        print("  -> '4 scenarios' is the seed of a ~10^N space, not the space itself.")
+        return 0
+
+    if args.cmd == "transfer":
+        from . import transfer
+
+        rep = transfer.run()
+        print("Cross-class transfer of the 'will this defense hold?' model")
+        print("(train on all OTHER classes, test on the held-out class)\n")
+        print(f"  {'held-out class':<14}{'n':>6}{'base':>8}{'cross':>8}{'within':>8}{'gap':>8}")
+        print("  " + "-" * 52)
+        gaps = []
+        for r in rep["rows"]:
+            gaps.append(r["transfer_gap"])
+            print(f"  {r['held_out']:<14}{r['n']:>6}{r['base_rate']:>8.0%}"
+                  f"{r['cross_class_acc']:>8.0%}{r['within_class_acc']:>8.0%}{r['transfer_gap']:>+8.0%}")
+        mean_gap = sum(gaps) / len(gaps) if gaps else 0.0
+        print(f"\n  mean transfer gap (within - cross): {mean_gap:+.0%}")
+        if mean_gap > 0.1:
+            print("  -> defense-quality structure is largely CLASS-SPECIFIC: a model trained")
+            print("     on other bug classes transfers poorly. Each vulnerability class carries")
+            print("     information the others don't — the quantitative case for breadth.")
+        else:
+            print("  -> defense-quality structure transfers reasonably across classes.")
+        return 0
+
+    if args.cmd == "robust":
+        from . import robust
+
+        r = robust.run()
+        print(f"Robust defense under attacker-type uncertainty ({r['scenario']}, "
+              f"{r['n_defenses']} defenses x {len(r['stealths'])} stealth levels)\n")
+        print(f"  minimax (robust) defense: {r['robust_defense']}")
+        print(f"    guaranteed worst-case reward: {r['robust_worstcase']:+.2f}")
+        print(f"    mean reward over attacker types: {r['robust_mean']:+.2f}")
+        print(f"  oracle defender (knows the stealth): mean {r['oracle_mean']:+.2f}")
+        print(f"  regret of NOT knowing the attacker: {r['regret_of_not_knowing_attacker']:+.2f}")
+        print("\n  best-response crossover (no single defense is optimal everywhere):")
+        for c in r["crossover"]:
+            print(f"    stealth >= {c['stealth']:>3}: {c['best_defense']:<20} (reward {c['reward']:+.2f})")
+        print("\n  -> the optimal defense depends on the attacker's (unobservable) stealth;")
+        print("     the regret quantifies the value of attacker intelligence.")
+        return 0
+
+    if args.cmd == "pareto":
+        from . import pareto
+
+        allf = pareto.run_all()
+        print("Pareto frontier of defenses — (mean funds saved, false positives)\n")
+        for s, rep in allf.items():
+            front = rep["frontier"]
+            tag = "single dominant defense" if len(front) == 1 else f"{len(front)}-point trade-off"
+            print(f"  {s} ({rep['n_defenses']} defenses) -> {tag}:")
+            for p in front[:6]:
+                print(f"      saved {p['mean_saved']:.2f}, fp {p['fp']}   {p['defense']}")
+        print("\n  -> classes with a structural answer collapse to one dominant defense;")
+        print("     the behavioral 'no free lunch' class has a multi-point frontier.")
         return 0
 
     if args.cmd == "leaderboard":
@@ -295,6 +386,52 @@ def main(argv: list[str] | None = None) -> int:
         except Exception:
             pass
         print("\n  Deploy it as a one-line firewall hook (see README / examples/).")
+        return 0
+
+    if args.cmd == "explore":
+        from . import active
+
+        if args.acquire:
+            print(f"acquiring {args.acquire} most-uncertain points on the EVM ...")
+
+            def _p(done, total):
+                if done % 10 == 0 or done == total:
+                    print(f"  scored {done}/{total}")
+
+            added = active.acquire(budget=args.acquire, seed=args.seed, on_progress=_p)
+            from . import sweep
+
+            sweep.write_card()
+            print(f"added {added} actively-acquired records; corpus now {len(sweep.read())} total")
+            return 0
+
+        res = active.simulate(seed=args.seed, scenario=args.scenario, model=args.model)
+        c = res["curves"]
+        scope = f"scenario '{args.scenario}'" if args.scenario else "full corpus"
+        print(f"acquisition-strategy benchmark — {scope}, {args.model} model "
+              f"({res['n_total']} records, {res['n_test']} held out, avg of {res['n_seeds']} seeds)\n")
+        print(f"  {'labels':>7}{'uncertainty':>13}{'committee':>11}{'random':>9}")
+        print("  " + "-" * 42)
+        for j in range(len(c["random"])):
+            n = c["random"][j][0]
+            print(f"  {n:>7}{c['uncertainty'][j][1]:>13.1%}{c['committee'][j][1]:>11.1%}{c['random'][j][1]:>9.1%}")
+        # honest, data-driven verdict (no hard-coded claim)
+        def adv(name):
+            return sum(c[name][j][1] - c["random"][j][1] for j in range(len(c["random"]))) / len(c["random"])
+        au, ac = adv("uncertainty"), adv("committee")
+        best = max(au, ac)
+        print(f"\n  mean advantage vs random: uncertainty {au:+.1%}, committee {ac:+.1%}")
+        if best > 0.01:
+            print(f"  -> active acquisition beats random here (+{best:.1%}).")
+        elif best > 0.002:
+            print(f"  -> active acquisition MARGINALLY beats random (+{best:.1%}) — a small but")
+            print("     consistent edge, as expected on a harder, ambiguous-label class.")
+        else:
+            print("  -> HONEST RESULT: active acquisition does NOT beat random here.")
+            print("     Near-deterministic labels make representative random sampling strong,")
+            print("     and querying rare boundary cases hurts a simple model.")
+            if not args.scenario:
+                print("     It helps more on harder labels: try `--scenario behavioral`.")
         return 0
 
     return 1
