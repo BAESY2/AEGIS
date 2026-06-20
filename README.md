@@ -212,6 +212,10 @@ within−cross accuracy gap **+17%**, up to +36% for governance — run
 `aegis transfer`). Each vulnerability class carries information the others don't —
 the quantitative case for breadth.
 
+> **Integrating a protocol?** See [docs/INTEGRATION.md](./docs/INTEGRATION.md) —
+> the one-line hook, the `ctx` contract per threat, picking/writing/training a
+> defense, and validating it against your live mainnet state.
+
 ## The core abstraction
 
 A **Scenario** = a vulnerable `Target`, a verified exploit `Attack`, and a
