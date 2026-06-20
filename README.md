@@ -126,6 +126,30 @@ Each class models a category responsible for real, nine-figure losses:
 | Broken access control | Parity multisig freeze (~$150M+, 2017); a recurring top loss category in bridge hacks |
 | Flash-loan governance | Beanstalk (~$182M, 2022) |
 
+### Scenario 05 — when structure *fails* (the no-free-lunch frontier)
+
+The four classes above all have a clean structural answer. Scenario 05
+(`test/Behavioral.t.sol`) is the deliberate counter-example, so the benchmark
+isn't just five reruns of "structure wins": a **stolen-key account drain**, where
+the thief holds the owner's key and so passes the authorization invariant that
+wins Scenario 03. Structure is useless; the only signal is behavioral, and
+legitimate vs. malicious behavior genuinely overlap. Scored as a precision/recall
+frontier (recall = attacks blocked, FP = legitimate withdrawals blocked):
+
+| Defense | False positives | Attacks caught | Reward (TPR−FPR) |
+|---------|:---------------:|:--------------:|:----------------:|
+| owner-only (authorization invariant) | 0/8 | **0/6** | 0.00 |
+| amount cap | 1/8 | 4/6 | 0.54 |
+| new-destination only | 2/8 | **6/6** | 0.75 |
+| **behavioral (feature-combining)** | **0/8** | 5/6 | **0.83** |
+
+**No defense reaches perfect recall at zero false positives** — catching the
+patient thief who mimics a small payment to a new payee necessarily costs a false
+positive. The feature-combining (learned-shape) defense is the best operating
+point but cannot erase the overlap. This is where a *learned* defense becomes
+necessary, not optional — and where the verifiable reward measures a real
+security frontier rather than a clean win.
+
 The full, **auto-generated** ranking lives in [LEADERBOARD.md](./LEADERBOARD.md)
 (regenerate with `aegis bench`). Each defense is ranked by **worst-case reward**
 — the minimum, over the entire attacker grid, of `funds_saved − false_positive_rate`
