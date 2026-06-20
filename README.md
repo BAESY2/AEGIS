@@ -70,7 +70,7 @@ Everything below runs from one dependency-free CLI; every number is EVM-verified
 | **Cross-class transfer** | defense-quality is class-specific (+17% gap) — breadth matters | `aegis transfer` |
 | **Robust / minimax** | optimal defense under unknown attacker; regret of not knowing | `aegis robust` |
 | **Pareto frontier** | structural classes collapse to one defense; behavioral is a real trade-off | `aegis pareto` |
-| **Forked-mainnet** | the oracle guards on live Uniswap V2 state | `make fork` |
+| **Forked-mainnet** | guards on live Uniswap V2 + real Chainlink ETH/USD, with a real executed swap | `make fork` |
 
 ## Why this exists
 
