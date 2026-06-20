@@ -7,6 +7,7 @@ import {VulnerableVault} from "../src/scenarios/reentrancy/VulnerableVault.sol";
 import {PatientReentrancyAttacker} from "../src/scenarios/reentrancy/PatientReentrancyAttacker.sol";
 import {WindowedRateLimitDefense} from "../src/defenses/WindowedRateLimitDefense.sol";
 import {PerAddressInvariantDefense} from "../src/defenses/PerAddressInvariantDefense.sol";
+import {ReentrancyLockDefense} from "../src/defenses/ReentrancyLockDefense.sol";
 import {IDefense} from "../src/interfaces/IDefense.sol";
 
 /// @notice Env-driven co-evolution matchup scorer. Evaluates one
@@ -21,12 +22,16 @@ contract Matchup is Test {
     uint256 constant SPACING = 16; // legit events land in separate windows
 
     /// Build the defense under test. AEGIS_DEF selects the family:
-    ///   "windowed" (default) -> WindowedRateLimitDefense(window, cap)
-    ///   "peraddr"            -> PerAddressInvariantDefense() (behavioral)
+    ///   "windowed" (default) -> WindowedRateLimitDefense(window, cap)  [rate]
+    ///   "peraddr"            -> PerAddressInvariantDefense()           [structural]
+    ///   "lock"               -> ReentrancyLockDefense()                [structural]
     function _buildDefense(uint256 W, uint256 cap) internal returns (IDefense) {
-        string memory kind = vm.envOr("AEGIS_DEF", string("windowed"));
-        if (keccak256(bytes(kind)) == keccak256(bytes("peraddr"))) {
+        bytes32 kind = keccak256(bytes(vm.envOr("AEGIS_DEF", string("windowed"))));
+        if (kind == keccak256("peraddr")) {
             return new PerAddressInvariantDefense();
+        }
+        if (kind == keccak256("lock")) {
+            return new ReentrancyLockDefense();
         }
         return new WindowedRateLimitDefense(W, cap);
     }

@@ -261,14 +261,71 @@ human/governance-gated and out of scope for autonomous control.
 5. A hosted leaderboard that accumulates submitted attack/defense trajectories —
    the compounding dataset asset.
 
+## Addendum (post-report): two more vulnerability classes and a continuous learner
+
+Extensions made after the report above further support its thesis. All are
+reproducible from the unified `aegis` benchmark CLI and do not alter any number
+in Sections 4–5.
+
+**Two more vulnerability classes.** *Scenario 03 — broken access control:* a
+treasury whose privileged `adminWithdraw` is missing its authorization check (the
+single most common cause of real on-chain losses). The attacker is a non-admin
+draining at a tunable rate; the threshold family is a windowed outflow cap and
+the structural family is an *identity invariant* (`OwnerOnlyDefense`: the caller
+must be the configured admin, read from `ctx`). *Scenario 04 — flash-loan
+governance takeover (the Beanstalk class):* a governor that counts votes at the
+current token balance, so an attacker flash-borrows voting power, clears quorum,
+drains the treasury, and repays atomically. The threshold family is a vote-count
+cap; the structural family is a *snapshot invariant* (`SnapshotVoteGuard`: votes
+must be backed by start-of-block holdings). Under the same train/test protocol:
+
+| Scenario | Family | Train | Test | Gap |
+|----------|--------|:-----:|:----:|:---:|
+| 03 access control | rate-based (windowed cap) | 1.00 | 0.00 | **1.00** |
+| 03 access control | structural (authorization invariant) | 1.00 | 1.00 | **0.00** |
+| 04 governance | vote-count cap | 1.00 | 0.00 | **1.00** |
+| 04 governance | structural (snapshot invariant) | 1.00 | 1.00 | **0.00** |
+
+The overfit-vs-generalize separation reappears unchanged in two more,
+structurally distinct classes — evidence the methodology, not a quirk of one bug,
+is what is being measured. Scenario 04 is the sharpest instance: a minimal
+flash-loan attacker borrowing exactly the quorum is *identical to a legitimate
+quorum-holding voter by vote count*, so no count threshold can separate them;
+only the snapshot — was the stake held before this block? — can. All four classes
+are now driven from one declarative registry; `python3 -m aegis bench` produces a
+unified worst-case leaderboard and the generalization study, and
+`python3 -m aegis verify` asserts these invariants as a CI gate.
+
+**A continuous policy-gradient learner.** Section 4 used grid best-response (the
+simplest learner). We add a Gymnasium-style environment (`aegis.env`) with a
+continuous `(window, cap)` action and a diagonal-Gaussian REINFORCE agent
+(`aegis.agents`, pure Python) that optimizes *worst-case* reward over the whole
+attacker grid. From the verifiable reward alone the agent's continuous search
+reliably beats the hand-picked grid's best worst-case reward (0.25), and usually
+finds a tight breaker (cap = one chunk) at worst-case reward 0.75 — yet never
+reaches 1.0, because any cap that stops the patient drain also blocks the
+legitimate whale. The structural family achieves 1.0 trivially. The learned
+optimizer thus arrives at the same conclusion as the grid search: **the signal,
+not the threshold, is what matters.** Run it with `python3 -m aegis train`.
+
 ## Reproducibility
 
 ```bash
 curl -L https://foundry.paradigm.xyz | bash && foundryup
 forge install foundry-rs/forge-std
-forge test                          # scenario + static scoreboard
-cd aegis-gym && python3 train.py    # single-agent learning demo
-cd aegis-gym && python3 coevolve.py # the arms race in this report
+forge test                          # all scenarios + static scoreboards
+
+cd aegis-gym
+python3 -m aegis bench              # unified leaderboard + generalization (all classes)
+python3 -m aegis verify            # assert the benchmark invariants (CI gate)
+python3 -m aegis train             # the continuous policy-gradient learner
+python3 -m aegis coevolve reentrancy
+
+# standalone scripts that emit the exact Section-4/5 artifacts:
+python3 coevolve.py                 # -> scoring/coevolution.json (the arms race)
+python3 generalize.py               # -> scoring/generalization.json (the headline split)
 ```
 
-All numbers above are emitted by `coevolve.py` to `scoring/coevolution.json`.
+The Section 4–5 numbers are emitted by `coevolve.py`/`generalize.py`; the
+addendum numbers by the `aegis` CLI (`scoring/leaderboard.json`,
+`scoring/training.json`).

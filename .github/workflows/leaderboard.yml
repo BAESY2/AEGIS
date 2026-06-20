@@ -1,0 +1,58 @@
+name: leaderboard
+
+# Score the whole benchmark on every PR and post the ranking as a sticky comment,
+# so a submitted defense gets graded automatically — the "submit a defense, get
+# scored, climb the board" loop, GitHub-native.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  score-and-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - run: forge install foundry-rs/forge-std --no-commit || true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run the benchmark (EVM-scored)
+        run: |
+          cd aegis-gym
+          python3 -m aegis bench
+
+      - name: Upsert leaderboard PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- aegis-leaderboard -->';
+            let board = '_LEADERBOARD.md was not generated._';
+            try { board = fs.readFileSync('LEADERBOARD.md', 'utf8'); } catch (e) {}
+            // GitHub comment size cap is ~65k chars; trim defensively.
+            if (board.length > 60000) board = board.slice(0, 60000) + '\n\n_…truncated._';
+            const body = `${marker}\n### 🛡️ Aegis benchmark — scored on this PR\n\n${board}`;
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

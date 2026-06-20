@@ -21,18 +21,28 @@ docs/                          # DESIGN, PAPER, SCENARIOS, ROADMAP
 
 ## Adding a defense
 
-1. Implement `IDefense.authorize(caller, selector, value, ctx)`.
+1. Copy `examples/TemplateDefense.sol` to `src/defenses/MyDefense.sol` and
+   implement `IDefense.authorize(caller, selector, value, ctx)`.
 2. It may be stateful or use transient storage; it must be honest about the
    scenario `ctx` it decodes.
-3. Score it: `AEGIS_DEF=<your-kind> make frontier` (wire it into `_buildDefense`).
+3. Wire it into a scenario's `_buildDefense` helper and add a `DefenseConfig` in
+   `aegis-gym/aegis/registry.py`, then score it on the EVM:
+   ```bash
+   cd aegis-gym
+   python3 -m aegis score <scenario> <your-defense-substring> <attacker>
+   python3 -m aegis leaderboard <scenario>
+   ```
 4. A good defense earns a positive reward by *precision*, not by blocking
-   everything — the reward penalizes false positives 1:1.
+   everything — the reward penalizes false positives 1:1. Full walkthrough:
+   [examples/README.md](examples/README.md).
 
 ## Adding a scenario
 
 See `docs/SCENARIOS.md`. In short: provide a `Target` with the one-line firewall
-hook, at least one verified `Attack`, a `Benign` traffic suite, and document the
-`ctx` encoding so defenses can read it.
+hook, at least one verified parameterized `Attack`, a `Benign` traffic suite,
+document the `ctx` encoding, add an env-driven `MatchupNN.t.sol` scorer, and
+register one `Scenario(...)` entry in `aegis-gym/aegis/registry.py` — which wires
+it into the leaderboard, generalization study, and arms race automatically.
 
 ## Standards
 

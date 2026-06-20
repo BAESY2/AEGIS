@@ -1,9 +1,11 @@
 # Aegis — Build Roadmap
 
-Honest status: Aegis is past proof-of-concept (a real environment with two
-verified research results) but not yet a large-scale platform. This roadmap is
-the path from here to a benchmark labs adopt and a dataset that compounds. Effort
-estimates assume one focused engineer.
+Honest status: Aegis is past proof-of-concept (a real environment with three
+vulnerability classes, a unified benchmark/leaderboard, a continuous
+policy-gradient learner, and verified research results) but not yet a
+large-scale hosted platform. This roadmap is the path from here to a benchmark
+labs adopt and a dataset that compounds. Effort estimates assume one focused
+engineer.
 
 ## M0 — Foundation (DONE)
 
@@ -18,31 +20,42 @@ estimates assume one focused engineer.
 
 ## M1 — Scenario library (in progress)
 
-Scenario 02 (oracle/price manipulation, local mock AMM) is DONE: a second,
-structurally different vulnerability class that reproduces the floor-and-crossing
-result, proving the framework generalizes. Remaining:
+FOUR structurally different vulnerability classes are DONE, each reproducing
+the overfit-vs-generalize result, which is what proves the *methodology* (not a
+quirk of one bug) is what's being measured:
 
-The single biggest credibility jump: more, and *forked-mainnet*, vulnerability
-classes so results are not reentrancy-specific.
+- Scenario 01 — reentrancy (rate threshold vs per-address invariant / reentrancy lock).
+- Scenario 02 — oracle/price manipulation (fixed anchor vs lagged oracle).
+- Scenario 03 — broken access control (value/rate cap vs authorization invariant).
+- Scenario 04 — flash-loan governance takeover (vote-count cap vs snapshot invariant).
 
+All four are wired into a single declarative registry, so the unified
+leaderboard, generalization study, and arms race pick them up automatically
+(`python3 -m aegis bench`). Remaining — the biggest credibility jump is more,
+and *forked-mainnet*, classes:
+
+- ERC4626 share-inflation / first-depositor donation (local; rounding/economic).
 - Flash-loan price manipulation (forked mainnet; pinned block; real DEX pair).
-- Oracle manipulation (spot vs TWAP).
-- Governance takeover.
 - Honeypot / canary tripwire (local; first touch trips the breaker).
 - Dependency: an archive RPC (Alchemy/Infura) and a `forking` profile.
 
-## M2 — Real RL training stack (≈3–5 weeks)
+## M2 — Real RL training stack (in progress)
 
 Make "learning" robust, not a bandit over a grid.
 
-- Continuous / multi-parameter defense parameterization.
-- A proper optimizer (PPO/REINFORCE or CEM) with a vectorized scorer (a pool of
-  `anvil` instances / parallel `forge`) for throughput.
-- **Train/test generalization split** (DONE): `aegis-gym/generalize.py` trains
-  each defense family on a train attacker set and reports worst-case on a held-out
-  test set. Result: structural defenses generalize (gap 0.00), threshold/rate
-  defenses overfit (gap 1.00), in both scenarios. Remaining: continuous-param
-  policy-gradient and a vectorized (anvil-pool) scorer for throughput.
+- **Continuous / multi-parameter defense parameterization** (DONE):
+  `aegis.env.RobustRateLimitEnv` exposes a continuous `(window, cap)` action over
+  a Gymnasium-style `reset()/step()` API.
+- **A policy-gradient optimizer** (DONE): `aegis.agents.GaussianREINFORCE`
+  (diagonal-Gaussian REINFORCE with a moving-average baseline, pure Python). It
+  optimizes worst-case reward over the whole attacker grid and beats the
+  hand-picked grid; `python3 -m aegis train`.
+- **Train/test generalization split** (DONE): trains each defense family on a
+  train attacker set and reports worst-case on a held-out test set. Result:
+  structural defenses generalize (gap 0.00), threshold/rate defenses overfit
+  (gap 1.00), in all three scenarios.
+- Remaining: a vectorized scorer (a pool of `anvil` instances / parallel `forge`)
+  for throughput, and PPO/CEM baselines for richer action spaces.
 
 ## M3 — Behavioral defenses + adversarial co-evolution (≈3–4 weeks)
 
@@ -60,9 +73,11 @@ The compounding-moat layer.
   (isolation, resource limits, no network).
 - Capture every submission's attack/defense trajectory: the dataset asset.
 
-## M5 — Packaging & standardization (≈2–3 weeks)
+## M5 — Packaging & standardization (in progress)
 
-- `aegis` Python package exposing a clean `reset()/step()` gym API on PyPI.
+- **`aegis` Python package** (DONE): installable `aegis-gym` (pyproject) exposing
+  an `aegis` console script and a `reset()/step()` env; forge-free unit tests in
+  CI. Remaining: publish to PyPI.
 - A Foundry scenario template + versioned, frozen benchmark releases (the
   SWE-bench model) so scores are comparable over time.
 - Reproducibility harness; submit the paper to a security/ML workshop.

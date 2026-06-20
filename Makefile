@@ -1,5 +1,5 @@
 # Aegis — common tasks
-.PHONY: install build test fmt learn coevolve frontier oracle generalize clean
+.PHONY: install build test fmt bench leaderboard verify trajectories dataset classify recommend rl-train learn coevolve frontier oracle generalize clean
 
 install:
 	forge install foundry-rs/forge-std --no-commit || true
@@ -13,7 +13,43 @@ test:
 fmt:
 	forge fmt
 
-# single-agent learning demo (discovers the optimal rate cap)
+# unified benchmark across ALL registered scenarios: ranks every defense and
+# runs the train/test generalization study, writing scoring/leaderboard.json
+# and the published LEADERBOARD.md.
+bench:
+	cd aegis-gym && python3 -m aegis bench
+
+# print the leaderboard for all scenarios (no file output)
+leaderboard:
+	cd aegis-gym && python3 -m aegis leaderboard
+
+# assert the benchmark invariants on the EVM (structural tops every scenario and
+# generalizes; threshold/rate defenses overfit) — the CI "living benchmark" gate
+verify:
+	cd aegis-gym && python3 -m aegis verify
+
+# summarize the compounding trajectory ledger (every scored matchup is recorded)
+trajectories:
+	cd aegis-gym && python3 -m aegis trajectories
+
+# generate/extend the EVM-verified trajectory dataset (data/trajectories.jsonl)
+dataset:
+	cd aegis-gym && python3 -m aegis dataset --budget 200
+
+# train a defense-outcome classifier on the dataset (data -> model loop)
+classify:
+	cd aegis-gym && python3 -m aegis classify
+
+# recommend the defense to deploy for a scenario (the advisory product surface)
+recommend:
+	cd aegis-gym && python3 -m aegis recommend reentrancy
+
+# continuous policy-gradient agent: learns a robust (window, cap) breaker from
+# the verifiable worst-case reward (writes scoring/training.json)
+rl-train:
+	cd aegis-gym && python3 -m aegis train reentrancy
+
+# single-agent learning demo (epsilon-greedy bandit discovers the optimal cap)
 learn:
 	cd aegis-gym && python3 train.py
 
@@ -34,4 +70,4 @@ generalize:
 	cd aegis-gym && python3 generalize.py
 
 clean:
-	forge clean && rm -f scoring/run.json scoring/matchup.json scoring/matchup02.json scoring/results.json
+	forge clean && rm -f scoring/run.json scoring/matchup.json scoring/matchup02.json scoring/matchup03.json scoring/matchup04.json scoring/results.json
