@@ -1,5 +1,5 @@
 # Aegis — common tasks
-.PHONY: install build test fork fmt bench leaderboard verify trajectories space dataset classify recommend submit serve rl-train learn coevolve dex-coevolve frontier oracle generalize clean
+.PHONY: install build test fork exploit fmt bench leaderboard verify trajectories space dataset classify recommend submit serve rl-train learn coevolve dex-coevolve frontier oracle generalize clean
 
 install:
 	forge install foundry-rs/forge-std --no-commit || true
@@ -15,6 +15,12 @@ test:
 fork:
 	MAINNET_RPC_URL=$${MAINNET_RPC_URL:-https://ethereum-rpc.publicnode.com} \
 		forge test --match-contract Fork -vv
+
+# real historical exploit replay (needs an ARCHIVE node for 2022 state):
+# the Inverse Finance oracle manipulation, with the guard's signal firing on it
+exploit:
+	ARCHIVE_RPC_URL=$${ARCHIVE_RPC_URL:-https://eth.drpc.org} \
+		forge test --match-contract ForkExploitInverse -vv
 
 fmt:
 	forge fmt

@@ -26,12 +26,12 @@ outcome the EVM itself certifies — funds saved, with no human labels.
 ## TL;DR — the result that matters
 
 > **Read this first:** the headline generalization result is a *constructed
-> demonstration* on clean models, not field evidence; the fork tests use a
-> synthetic manipulating swap, not a historical-exploit replay (archive state
-> required, unavailable on public RPCs); and the "swarm" is a direction, not a
-> shipped implementation. The honest threat model is in
-> [`docs/LIMITATIONS.md`](./docs/LIMITATIONS.md) — the methodology is the
-> contribution, not a guarantee.
+> demonstration* on clean models, not field evidence; most fork tests use a
+> synthetic manipulating swap (one real exploit — Inverse Finance — is replayed
+> on archive state, but it fires the guard's *signal*, not a full attacker-
+> calldata replay); and the "swarm" is a direction, not a shipped implementation.
+> The honest threat model is in [`docs/LIMITATIONS.md`](./docs/LIMITATIONS.md) —
+> the methodology is the contribution, not a guarantee.
 
 The sharpest question a defense benchmark can answer is **generalization**: a
 defense tuned against the attacks you've *seen* — does it hold against the ones
@@ -80,6 +80,7 @@ Everything below runs from one dependency-free CLI; every number is EVM-verified
 | **Robust / minimax** | optimal defense under unknown attacker; regret of not knowing | `aegis robust` |
 | **Pareto frontier** | structural classes collapse to one defense; behavioral is a real trade-off | `aegis pareto` |
 | **Forked-mainnet** | DEX guards on live Uniswap V2 + Sushiswap + real Chainlink — 3-source consensus, TWAP, and price-impact, each with a real executed swap | `make fork` |
+| **Real exploit replay** | the guard's signal fires on the **actual** Inverse Finance oracle manipulation (Apr 2022): a 56x pump diverges from the genuine TWAP, guard blocks | `make exploit` |
 
 ## For protocols: defenses validated on live mainnet state
 

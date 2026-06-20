@@ -17,18 +17,26 @@ do not) on clean models — **it is not evidence that any particular structural
 defense generalizes on real, messy, in-the-wild contracts.** Treat it as a
 teaching benchmark and a methodology, not a measurement of the real world.
 
-## The fork tests use a synthetic attack, not a historical exploit replay
+## Historical exploit replay — done for one real hack, with caveats
 
-The `test/Fork*.t.sol` suite runs against **real mainnet state** (live Uniswap
-V2 / Sushiswap reserves, the live Chainlink feed) and executes a **real swap**
-to manipulate price. That is genuinely more than a mock. But the manipulating
-swap is one we construct, **not a replay of a specific historical hack
-transaction**. The gold standard — fork at the block before a known exploit,
-replay the attacker's actual calldata, and show a guard's `authorize` returns
-`false` — is **not yet done**, and is **not possible on a public full node**
-(archive state at old blocks is required; the public RPCs used here do not serve
-it). Doing this properly needs a funded archive endpoint and is the most
-valuable single piece of future work.
+Most `test/Fork*.t.sol` tests run against **real mainnet state** but execute a
+manipulating swap *we* construct. One test goes further:
+`test/ForkExploitInverse.t.sol` replays the **Inverse Finance oracle
+manipulation of 2 April 2022** on real archive state. It forks the SushiSwap
+INV/WETH pool at two real blocks (before, and at the manipulation), reconstructs
+the genuine time-weighted price from the pool's own on-chain accumulators over
+that real window (~0.107 WETH/INV), and shows the manipulated spot at the
+exploit block (~6.0 WETH/INV, a **56x** pump) diverges so far that a
+consensus/deviation guard fed `(spot, TWAP)` returns `false`. The Aegis signal
+fires on the **actual exploited state**.
+
+Caveats, stated plainly: (1) it demonstrates the guard's *signal* fires on the
+real manipulated price — it does **not** replay the attacker's full calldata
+against the victim's own contracts; (2) it requires an **archive** node
+(historical state at 2022 blocks), so it is gated on `ARCHIVE_RPC_URL` and skips
+in normal CI; (3) it is **one** exploit. A broader corpus of replayed exploits
+(more hacks, full attacker-calldata replays) remains the most valuable future
+work.
 
 ## The RL / "swarm" is low-dimensional today
 
