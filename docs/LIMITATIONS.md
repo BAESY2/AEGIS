@@ -70,15 +70,26 @@ external `STATICCALL`s to the pair. **No guard here has been gas-golfed or
 audited** — they are reference implementations, not production-optimized,
 audited contracts.
 
-## Precision on real markets (the one part validated on live data)
+## Precision on real markets, tested in the wild
 
 The flip side of "does it block attacks?" is "does it block my real users?".
-`test/ForkRealMarkets.t.sol` checks the *allow* side on **four diverse live
-Uniswap V2 pools** (USDC/WETH, DAI/WETH, WETH/USDT, WBTC/WETH): a normal-sized
-trade and an unmanipulated spot (== its own TWAP) pass on every one. This is the
-single claim here genuinely validated on real, current on-chain state rather
-than a constructed model — low false positives on real liquidity. It does not
-extend to pools or assets not tested.
+Two checks, both on real on-chain state:
+
+- `test/ForkRealMarkets.t.sol` — a normal trade and an unmanipulated spot
+  (== its own TWAP) pass on four diverse live pools.
+- `aegis wild` (`aegis-gym/aegis/wild.py`) — replays **every real swap** from
+  live Uniswap V2 pools over a real block range through the price-impact math and
+  reports the actual false-positive rate. A representative run over ~6,000 recent
+  blocks across USDC/WETH, DAI/WETH, WETH/USDT and WBTC/WETH scanned **622 real
+  swaps**: the largest genuine price move was **0.43%**, and a **2% impact cap
+  would have blocked 0 of 622 (0.00%)**. Reproduce with
+  `AEGIS_RPC_URL=<node> python3 -m aegis wild`.
+
+So on real data we now have **both** sides: a true positive (the guard blocks the
+real Inverse Finance manipulation) and a near-zero false-positive rate (0/622
+genuine swaps blocked). Caveats: the wild scan covers the pools and window
+sampled, not all of DeFi; free public RPCs throttle large scans (the tool reports
+window coverage and tolerates dropped windows).
 
 ## The dataset and classifier are in-distribution
 

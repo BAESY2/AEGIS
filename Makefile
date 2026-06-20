@@ -1,5 +1,5 @@
 # Aegis — common tasks
-.PHONY: install build test fork exploit fmt bench leaderboard verify trajectories space dataset classify recommend submit serve rl-train learn coevolve dex-coevolve frontier oracle generalize clean
+.PHONY: install build test fork exploit fmt bench leaderboard verify trajectories space dataset classify recommend submit serve rl-train learn coevolve dex-coevolve wild frontier oracle generalize clean
 
 install:
 	forge install foundry-rs/forge-std --no-commit || true
@@ -85,6 +85,11 @@ coevolve:
 # best-responds with the windowed cumulative cap that bounds it
 dex-coevolve:
 	cd aegis-gym && python3 -m aegis dex-coevolve
+
+# wild test: run the price-impact guard against REAL mainnet swaps
+# (set AEGIS_RPC_URL to a full/archive node)
+wild:
+	cd aegis-gym && python3 -m aegis wild
 
 # rate-based vs behavioral defense comparison
 frontier:
