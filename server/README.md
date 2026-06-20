@@ -20,7 +20,7 @@ python3 server/app.py                    # serves on :8000 (PORT to override)
 | GET | `/health` | liveness |
 | GET | `/leaderboard` | the published leaderboard (`scoring/leaderboard.json`) |
 | GET | `/submissions` | the accumulated submission ledger |
-| POST | `/score` | body = Solidity source of `contract Submission is IDefense`; scores it on the reentrancy scenario and appends the result |
+| POST | `/score?scenario=<class>` | body = Solidity source of `contract Submission is IDefense`; scores it on the given class (reentrancy, oracle, access, governance, behavioral; default reentrancy) and appends the result |
 
 ```bash
 curl localhost:8000/health

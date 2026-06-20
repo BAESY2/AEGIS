@@ -212,6 +212,10 @@ within−cross accuracy gap **+17%**, up to +36% for governance — run
 `aegis transfer`). Each vulnerability class carries information the others don't —
 the quantitative case for breadth.
 
+> **Integrating a protocol?** See [docs/INTEGRATION.md](./docs/INTEGRATION.md) —
+> the one-line hook, the `ctx` contract per threat, picking/writing/training a
+> defense, and validating it against your live mainnet state.
+
 ## The core abstraction
 
 A **Scenario** = a vulnerable `Target`, a verified exploit `Attack`, and a
@@ -274,12 +278,14 @@ agent are documented in [docs/RL.md](./docs/RL.md).
    cd aegis-gym && python3 -m aegis score reentrancy yourdefense 2
    ```
 
-Even simpler — **submit without touching the registry**: drop your defense into
-`submissions/Submission.sol` and run `make submit` (or `python3 -m aegis submit`).
-The harness scores it across the reentrancy attacker grid and tells you your
-worst-case reward and where you'd rank. This is the local form of the hosted
-"submit a defense, get scored, climb the board" loop — and, run across many
-contributors, the mechanism that accumulates the multi-party dataset moat.
+Even simpler — **submit without touching the registry, for any of the five
+classes**: drop your defense into `submissions/<scenario>/Submission.sol`
+(reentrancy uses `submissions/Submission.sol`) and run
+`python3 -m aegis submit <scenario>`. The harness scores it across that
+scenario's attacker grid and tells you your worst-case reward and where you'd
+rank. This is the local form of the hosted "submit a defense, get scored, climb
+the board" loop — and, run across many contributors, the mechanism that
+accumulates the multi-party dataset moat.
 
 Adding a whole new **vulnerability class** is one `Scenario(...)` entry in
 `aegis-gym/aegis/registry.py` plus its Solidity target/exploit/defenses — and it

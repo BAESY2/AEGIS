@@ -272,12 +272,16 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  {'attacker':>9}{'saved':>8}{'reward':>9}")
         for row in r["rows"]:
             print(f"  {row['attacker']:>9}{row['saved']:>8.2f}{row['reward']:>+9.2f}")
+        fp_total = r.get("benign_total", "?")
         print(f"\n  worst-case saved:  {r['worst_case_saved']:.2f}")
-        print(f"  worst-case reward: {r['worst_case_reward']:+.2f}  (fp {r['fp']}/{r['benign_total']})")
-        print(f"  -> would rank #{r['rank']} of {r['field']} "
-              f"(reference best {r['leaderboard_best']:+.2f}).")
-        if r["worst_case_reward"] >= (r["leaderboard_best"] or 0) - 1e-9:
-            print("  🏆 ties or beats the best reference defense!")
+        print(f"  worst-case reward: {r['worst_case_reward']:+.2f}  (fp {r['fp']}/{fp_total})")
+        if r["rank"] is not None:
+            print(f"  -> would rank #{r['rank']} of {r['field']} "
+                  f"(reference best {r['leaderboard_best']:+.2f}).")
+            if r["worst_case_reward"] >= (r["leaderboard_best"] or 0) - 1e-9:
+                print("  🏆 ties or beats the best reference defense!")
+        else:
+            print("  (no reference leaderboard for this class — no-free-lunch frontier)")
         return 0
 
     if args.cmd == "leaderboard":

@@ -8,6 +8,7 @@ import {AmountThresholdDefense} from "../src/defenses/AmountThresholdDefense.sol
 import {NewDestinationDefense} from "../src/defenses/NewDestinationDefense.sol";
 import {BehavioralDefense} from "../src/defenses/BehavioralDefense.sol";
 import {CompositeDefense} from "../src/defenses/CompositeDefense.sol";
+import {Submission} from "../submissions/behavioral/Submission.sol";
 
 /// @notice Env-driven scorer for Scenario 05 (behavioral / stolen key) over an
 ///         ATTACKER-STEALTH axis. Unlike the other matchups, the label here is
@@ -36,6 +37,7 @@ contract Matchup05 is Test {
         if (k == keccak256("amount")) return new AmountThresholdDefense(capEth * 1 ether);
         if (k == keccak256("behavioral")) return new BehavioralDefense(matEth * 1 ether);
         if (k == keccak256("newdest")) return new NewDestinationDefense();
+        if (k == keccak256("submission")) return new Submission();
         return IDefense(address(0)); // "none"
     }
 

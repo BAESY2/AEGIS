@@ -8,6 +8,7 @@ import {Governance} from "../../src/scenarios/governance/Governance.sol";
 import {FlashGovAttacker} from "../../src/scenarios/governance/FlashGovAttacker.sol";
 import {MaxVotesGuard} from "../../src/defenses/MaxVotesGuard.sol";
 import {SnapshotVoteGuard} from "../../src/defenses/SnapshotVoteGuard.sol";
+import {Submission} from "../../submissions/governance/Submission.sol";
 
 /// @notice Shared measurement core for Scenario 04 (flash-loan governance
 ///         takeover). The benign actors are legitimate token holders who have
@@ -27,8 +28,12 @@ abstract contract GovernanceScenario is Test {
     ///   "maxvotes" (default) -> MaxVotesGuard(cap)        [vote-count threshold]
     ///   "snapshot"           -> SnapshotVoteGuard()       [structural]
     function _buildDefense(uint256 cap) internal returns (IDefense) {
-        if (keccak256(bytes(vm.envOr("AEGIS_DEF", string("maxvotes")))) == keccak256("snapshot")) {
+        bytes32 kind = keccak256(bytes(vm.envOr("AEGIS_DEF", string("maxvotes"))));
+        if (kind == keccak256("snapshot")) {
             return new SnapshotVoteGuard();
+        }
+        if (kind == keccak256("submission")) {
+            return new Submission();
         }
         return new MaxVotesGuard(cap);
     }
