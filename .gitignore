@@ -11,3 +11,4 @@ scoring/trajectories.jsonl
 __pycache__/
 *.pyc
 .env
+business/

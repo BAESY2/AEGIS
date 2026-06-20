@@ -1,5 +1,5 @@
 # Aegis — common tasks
-.PHONY: install build test fmt bench leaderboard verify trajectories dataset classify recommend rl-train learn coevolve frontier oracle generalize clean
+.PHONY: install build test fork fmt bench leaderboard verify trajectories dataset classify recommend rl-train learn coevolve frontier oracle generalize clean
 
 install:
 	forge install foundry-rs/forge-std --no-commit || true
@@ -9,6 +9,12 @@ build:
 
 test:
 	forge test -vv
+
+# forked-mainnet integration: run the oracle guards against REAL Uniswap V2
+# state (skips automatically without a fork endpoint)
+fork:
+	MAINNET_RPC_URL=$${MAINNET_RPC_URL:-https://ethereum-rpc.publicnode.com} \
+		forge test --match-contract ForkOracle -vv
 
 fmt:
 	forge fmt

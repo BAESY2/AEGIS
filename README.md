@@ -238,7 +238,11 @@ draft: [docs/PAPER.md](./docs/PAPER.md). Design: [docs/DESIGN.md](./docs/DESIGN.
 
 - **Scenarios:** `01 reentrancy`, `02 oracle manipulation`, `03 access control`,
   `04 flash-loan governance takeover` (done) → `05 ERC4626 share-inflation` →
-  `06 honeypot/canary tripwire`. Later scenarios run against forked mainnet state.
+  `06 honeypot/canary tripwire`.
+- **Forked-mainnet (started):** the oracle guards already run against **live
+  Uniswap V2 state** (`test/ForkOracle.t.sol`, `make fork`) — real reserves, a
+  real constant-product manipulation, no mock. It skips without an RPC so default
+  CI stays green. This is the bridge from synthetic to non-reproducible data.
 - **Learning (done):** a Gymnasium-style env + a continuous policy-gradient agent
   that learns a robust defense from verifiable reward alone.
 - **Co-evolution (done):** adaptive attacker/defender arms race over the reward.
