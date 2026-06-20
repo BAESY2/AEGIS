@@ -30,7 +30,8 @@ def _uncertainty(model, x) -> float:
     return abs(model.predict_proba(x) - 0.5)
 
 
-def _al_curve(strategy: str, records, test_idx, seed, rounds, batch, seed_size):
+def _al_curve(strategy: str, records, test_idx, seed, rounds, batch, seed_size, train_fn=None):
+    train_fn = train_fn or classify.train
     rng = random.Random(seed)
     n = len(records)
     pool = [i for i in range(n) if i not in test_idx]
@@ -46,7 +47,7 @@ def _al_curve(strategy: str, records, test_idx, seed, rounds, batch, seed_size):
     crng = random.Random(seed + 99)
     curve = []
     for _ in range(rounds):
-        model = classify.train([X[i] for i in labeled], [y[i] for i in labeled], seed=seed)
+        model = train_fn([X[i] for i in labeled], [y[i] for i in labeled], seed=seed)
         acc = classify.evaluate(model, Xte, yte)["accuracy"]
         curve.append((len(labeled), acc))
         if not unlabeled:
@@ -57,7 +58,7 @@ def _al_curve(strategy: str, records, test_idx, seed, rounds, batch, seed_size):
             lab = labeled
             for c in range(5):
                 boot = [lab[crng.randrange(len(lab))] for _ in range(len(lab))]
-                committee.append(classify.train([X[i] for i in boot], [y[i] for i in boot], seed=seed + c))
+                committee.append(train_fn([X[i] for i in boot], [y[i] for i in boot], seed=seed + c))
             def _disagree(i):
                 ps = [m.predict_proba(X[i]) for m in committee]
                 mean = sum(ps) / len(ps)
@@ -74,12 +75,21 @@ def _al_curve(strategy: str, records, test_idx, seed, rounds, batch, seed_size):
     return curve
 
 
+def _trainer(model: str):
+    if model == "mlp":
+        from . import mlp
+
+        return mlp.train
+    return classify.train
+
+
 def simulate(rounds: int = 9, batch: int = 12, seed_size: int = 12, seed: int = 0,
-             n_seeds: int = 8, scenario: str | None = None):
+             n_seeds: int = 8, scenario: str | None = None, model: str = "logreg"):
     """Average the active-vs-random curves over several seeds to de-noise the
     small-sample variance of the classifier. Honest: reports whatever the data
     shows, including the regime where active learning helps and where it doesn't.
-    Pass `scenario` to restrict to one class (e.g. the hard 'behavioral' one)."""
+    Pass `scenario` to restrict to one class (e.g. the hard 'behavioral' one) and
+    `model` to choose the learner ('logreg' or nonlinear 'mlp')."""
     records = sweep.read()
     if scenario:
         records = [r for r in records if r["scenario"] == scenario]
@@ -88,6 +98,7 @@ def simulate(rounds: int = 9, batch: int = 12, seed_size: int = 12, seed: int = 
             f"dataset too small ({len(records)}). Generate it: python3 -m aegis dataset --budget 400"
         )
 
+    train_fn = _trainer(model)
     arms = {"uncertainty": [], "committee": [], "random": []}
     strat = {"uncertainty": "active", "committee": "committee", "random": "random"}
     for s in range(seed, seed + n_seeds):
@@ -96,7 +107,7 @@ def simulate(rounds: int = 9, batch: int = 12, seed_size: int = 12, seed: int = 
         rng.shuffle(idx)
         test_idx = set(idx[: len(records) // 4])  # 25% held out, shared by all arms
         for name, st in strat.items():
-            arms[name].append(_al_curve(st, records, test_idx, s, rounds, batch, seed_size))
+            arms[name].append(_al_curve(st, records, test_idx, s, rounds, batch, seed_size, train_fn))
 
     def _avg(runs):
         m = min(len(r) for r in runs)

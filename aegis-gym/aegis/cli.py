@@ -110,6 +110,7 @@ def main(argv: list[str] | None = None) -> int:
     pe = sub.add_parser("explore", help="active learning: query the most uncertain points")
     pe.add_argument("--acquire", type=int, default=0, help="score N uncertain points on the EVM and add them")
     pe.add_argument("--scenario", default=None, help="restrict the experiment to one class (e.g. behavioral)")
+    pe.add_argument("--model", default="logreg", choices=["logreg", "mlp"], help="learner for the experiment")
     pe.add_argument("--seed", type=int, default=0)
 
     args = parser.parse_args(argv)
@@ -345,11 +346,11 @@ def main(argv: list[str] | None = None) -> int:
             print(f"added {added} actively-acquired records; corpus now {len(sweep.read())} total")
             return 0
 
-        res = active.simulate(seed=args.seed, scenario=args.scenario)
+        res = active.simulate(seed=args.seed, scenario=args.scenario, model=args.model)
         c = res["curves"]
         scope = f"scenario '{args.scenario}'" if args.scenario else "full corpus"
-        print(f"acquisition-strategy benchmark — {scope} ({res['n_total']} records, "
-              f"{res['n_test']} held out, avg of {res['n_seeds']} seeds)\n")
+        print(f"acquisition-strategy benchmark — {scope}, {args.model} model "
+              f"({res['n_total']} records, {res['n_test']} held out, avg of {res['n_seeds']} seeds)\n")
         print(f"  {'labels':>7}{'uncertainty':>13}{'committee':>11}{'random':>9}")
         print("  " + "-" * 42)
         for j in range(len(c["random"])):
