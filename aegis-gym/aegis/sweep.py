@@ -56,6 +56,18 @@ def _reentrancy_composite(r) -> dict:
     return env
 
 
+def _behavioral_composite(r) -> dict:
+    prims = ["amount", "behavioral", "newdest"]
+    k = r.randint(2, 3)
+    subset = r.sample(prims, k)
+    env = {"AEGIS_DEF": "+".join(subset)}
+    if "amount" in subset:
+        env["AEGIS_CAP"] = r.randint(1, 5)
+    if "behavioral" in subset:
+        env["AEGIS_MAT"] = r.randint(1, 5)
+    return env
+
+
 def _is_structural(env: dict) -> bool:
     spec = str(env.get("AEGIS_DEF", "")) + str(env.get("AEGIS_GUARD", ""))
     return any(tok in spec for tok in _STRUCTURAL_TOKENS)
@@ -153,6 +165,37 @@ def _spaces() -> list[Space]:
                     "name": "snapshot",
                     "structural": True,
                     "sample": lambda r: {"AEGIS_DEF": "snapshot"},
+                },
+            ],
+        ),
+        # The hard-label class: ambiguous, non-monotonic, no structural winner.
+        Space(
+            scenario="behavioral",
+            match_test="test_matchup05",
+            json_file="matchup05.json",
+            attacker_knob="AEGIS_STEALTH",
+            attackers=[0, 15, 30, 45, 60, 75, 90, 100],
+            static_env={},
+            families=[
+                {
+                    "name": "amount",
+                    "structural": False,
+                    "sample": lambda r: {"AEGIS_DEF": "amount", "AEGIS_CAP": r.randint(1, 5)},
+                },
+                {
+                    "name": "behavioral",
+                    "structural": False,
+                    "sample": lambda r: {"AEGIS_DEF": "behavioral", "AEGIS_MAT": r.randint(1, 5)},
+                },
+                {
+                    "name": "newdest",
+                    "structural": False,
+                    "sample": lambda r: {"AEGIS_DEF": "newdest"},
+                },
+                {
+                    "name": "composite",
+                    "structural": False,
+                    "sample": _behavioral_composite,
                 },
             ],
         ),

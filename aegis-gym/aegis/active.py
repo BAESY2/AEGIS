@@ -74,11 +74,15 @@ def _al_curve(strategy: str, records, test_idx, seed, rounds, batch, seed_size):
     return curve
 
 
-def simulate(rounds: int = 9, batch: int = 12, seed_size: int = 12, seed: int = 0, n_seeds: int = 8):
+def simulate(rounds: int = 9, batch: int = 12, seed_size: int = 12, seed: int = 0,
+             n_seeds: int = 8, scenario: str | None = None):
     """Average the active-vs-random curves over several seeds to de-noise the
     small-sample variance of the classifier. Honest: reports whatever the data
-    shows, including the regime where active learning helps and where it doesn't."""
+    shows, including the regime where active learning helps and where it doesn't.
+    Pass `scenario` to restrict to one class (e.g. the hard 'behavioral' one)."""
     records = sweep.read()
+    if scenario:
+        records = [r for r in records if r["scenario"] == scenario]
     if len(records) < 100:
         raise RuntimeError(
             f"dataset too small ({len(records)}). Generate it: python3 -m aegis dataset --budget 400"

@@ -97,6 +97,8 @@ python3 -m aegis train reentrancy      # a policy-gradient agent learns a defens
 python3 -m aegis dataset --budget 200  # grow the EVM-verified trajectory dataset
 python3 -m aegis classify              # train a "will this defense hold?" model
 python3 -m aegis recommend governance  # recommend the defense to deploy for a threat
+python3 -m aegis space                 # the ~10^10 combinatorial space size
+python3 -m aegis explore --scenario behavioral   # active learning vs random (honest)
 python3 -m aegis score access owneronly 11   # score one matchup on the EVM
 ```
 

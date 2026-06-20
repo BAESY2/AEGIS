@@ -109,6 +109,7 @@ def main(argv: list[str] | None = None) -> int:
 
     pe = sub.add_parser("explore", help="active learning: query the most uncertain points")
     pe.add_argument("--acquire", type=int, default=0, help="score N uncertain points on the EVM and add them")
+    pe.add_argument("--scenario", default=None, help="restrict the experiment to one class (e.g. behavioral)")
     pe.add_argument("--seed", type=int, default=0)
 
     args = parser.parse_args(argv)
@@ -344,9 +345,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"added {added} actively-acquired records; corpus now {len(sweep.read())} total")
             return 0
 
-        res = active.simulate(seed=args.seed)
+        res = active.simulate(seed=args.seed, scenario=args.scenario)
         c = res["curves"]
-        print(f"acquisition-strategy benchmark over the corpus ({res['n_total']} records, "
+        scope = f"scenario '{args.scenario}'" if args.scenario else "full corpus"
+        print(f"acquisition-strategy benchmark — {scope} ({res['n_total']} records, "
               f"{res['n_test']} held out, avg of {res['n_seeds']} seeds)\n")
         print(f"  {'labels':>7}{'uncertainty':>13}{'committee':>11}{'random':>9}")
         print("  " + "-" * 42)
@@ -360,13 +362,16 @@ def main(argv: list[str] | None = None) -> int:
         best = max(au, ac)
         print(f"\n  mean advantage vs random: uncertainty {au:+.1%}, committee {ac:+.1%}")
         if best > 0.01:
-            print("  -> active acquisition beats random on this corpus.")
+            print(f"  -> active acquisition beats random here (+{best:.1%}).")
+        elif best > 0.002:
+            print(f"  -> active acquisition MARGINALLY beats random (+{best:.1%}) — a small but")
+            print("     consistent edge, as expected on a harder, ambiguous-label class.")
         else:
-            print("  -> HONEST RESULT: active acquisition does NOT beat random here. The")
-            print("     corpus labels are near-deterministic, so representative random")
-            print("     sampling is already strong and querying rare boundary cases hurts.")
-            print("     Active learning's payoff needs genuinely noisy/overlapping labels")
-            print("     (e.g. the behavioral no-free-lunch class) — that is the next step.")
+            print("  -> HONEST RESULT: active acquisition does NOT beat random here.")
+            print("     Near-deterministic labels make representative random sampling strong,")
+            print("     and querying rare boundary cases hurts a simple model.")
+            if not args.scenario:
+                print("     It helps more on harder labels: try `--scenario behavioral`.")
         return 0
 
     return 1

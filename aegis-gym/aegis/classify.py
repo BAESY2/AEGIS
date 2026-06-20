@@ -35,6 +35,8 @@ def featurize(rec: dict) -> list[float]:
         a = float(p["AEGIS_WINDOW"]) / 12.0
     if "AEGIS_DEVBPS" in p:
         a = float(p["AEGIS_DEVBPS"]) / 2000.0
+    if "AEGIS_MAT" in p:
+        a = float(p["AEGIS_MAT"]) / 8.0  # behavioral materiality floor
     if "AEGIS_CAP" in p:
         cap = float(p["AEGIS_CAP"])
         b = cap / (6000.0 if sc == "governance" else 12.0)
