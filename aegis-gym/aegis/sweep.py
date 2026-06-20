@@ -285,7 +285,29 @@ def write_card(path: Path | None = None) -> Path:
         "- **Generalization study:** train on a subset of attackers/scenarios, "
         "test on held-out ones (structural vs threshold).",
         "",
-        "License: MIT (same as the repository).",
     ]
+
+    # Baseline model on this corpus (the data -> model loop), best-effort.
+    try:
+        from . import classify
+
+        r = classify.run(seed=0)
+        lines += [
+            "## Baseline model (`aegis classify`)",
+            "",
+            f"A logistic-regression model trained on this corpus predicts whether a "
+            f"defense holds (reward > 0) **without running the EVM**:",
+            "",
+            f"- Test accuracy: **{r['test']['accuracy']:.1%}** "
+            f"(precision {r['test']['precision']:.1%}, recall {r['test']['recall']:.1%}; "
+            f"base rate {r['test_base_rate']:.1%}), "
+            f"on {r['n_test']} held-out matchups.",
+            "- It sharpens as the corpus grows — the compounding data asset in action.",
+            "",
+        ]
+    except Exception:
+        pass
+
+    lines.append("License: MIT (same as the repository).")
     path.write_text("\n".join(lines) + "\n")
     return path

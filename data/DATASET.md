@@ -2,19 +2,19 @@
 
 An EVM-verified, label-free corpus of smart-contract defense matchups. Every record is produced by contract execution on a forked chain (Foundry) — no human labels, no Python heuristics. This is the concrete form of the project's data asset: each scenario added and each match played enlarges it.
 
-- **Records:** 1030
-- **Positive-reward (precise) matchups:** 654
-- **Zero/negative-reward matchups:** 376
+- **Records:** 1410
+- **Positive-reward (precise) matchups:** 899
+- **Zero/negative-reward matchups:** 511
 - **Provenance:** deterministic; regenerate/extend with `cd aegis-gym && python3 -m aegis dataset --budget N --seed S`.
 
 ## Per-scenario coverage
 
 | Scenario | Records | Families (n) |
 |----------|:-------:|--------------|
-| access | 231 | *identity (10), rate-based (221) |
-| governance | 86 | *snapshot (9), vote-cap (77) |
-| oracle | 497 | fixed-anchor (245), *lagged-oracle (252) |
-| reentrancy | 216 | *behavioral (20), rate-based (196) |
+| access | 303 | *identity (10), rate-based (293) |
+| governance | 88 | *snapshot (9), vote-cap (79) |
+| oracle | 708 | fixed-anchor (339), *lagged-oracle (369) |
+| reentrancy | 311 | *behavioral (20), rate-based (291) |
 
 `*` = structural / invariant-based defense.
 
@@ -35,5 +35,12 @@ An EVM-verified, label-free corpus of smart-contract defense matchups. Every rec
 - **Defense-outcome prediction:** features → `reward` (regression) or `reward > 0` (classification): "will this defense hold?"
 - **Robust-config search:** learn the configuration maximizing worst-case reward over the attacker axis (what `aegis train` does online).
 - **Generalization study:** train on a subset of attackers/scenarios, test on held-out ones (structural vs threshold).
+
+## Baseline model (`aegis classify`)
+
+A logistic-regression model trained on this corpus predicts whether a defense holds (reward > 0) **without running the EVM**:
+
+- Test accuracy: **81.9%** (precision 87.4%, recall 82.6%; base rate 61.8%), on 353 held-out matchups.
+- It sharpens as the corpus grows — the compounding data asset in action.
 
 License: MIT (same as the repository).
