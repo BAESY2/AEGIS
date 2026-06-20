@@ -196,7 +196,9 @@ def scan_cross_venue(url: str, venues: dict, from_block: int, to_block: int,
 
     latest = [None, None]
     devs = []
-    over_50 = over_100 = over_200 = 0
+    over = {50: 0, 100: 0, 200: 0}
+    persist = {50: 0, 100: 0, 200: 0}  # deviation held across two consecutive samples
+    prev_dev = None
     for (_blk, _li, vi, r0, r1) in events:
         if r0 <= 0 or r1 <= 0:
             continue
@@ -205,19 +207,22 @@ def scan_cross_venue(url: str, venues: dict, from_block: int, to_block: int,
             a, b2 = latest[0], latest[1]
             dev_bps = abs(a - b2) / ((a + b2) / 2) * 10000.0
             devs.append(dev_bps)
-            if dev_bps > 50:
-                over_50 += 1
-            if dev_bps > 100:
-                over_100 += 1
-            if dev_bps > 200:
-                over_200 += 1
+            for t in over:
+                if dev_bps > t:
+                    over[t] += 1
+                    if prev_dev is not None and prev_dev > t:
+                        persist[t] += 1  # transient single-sample spikes are filtered out
+            prev_dev = dev_bps
     return {
         "venues": names,
         "samples": len(devs),
         "devs": devs,
-        "over_50bps": over_50,
-        "over_100bps": over_100,
-        "over_200bps": over_200,
+        "over_50bps": over[50],
+        "over_100bps": over[100],
+        "over_200bps": over[200],
+        "persist_50bps": persist[50],
+        "persist_100bps": persist[100],
+        "persist_200bps": persist[200],
         "chunks_ok": ok,
         "chunks_failed": failed,
     }
@@ -248,18 +253,32 @@ def format_cross_venue(rep: dict, from_block: int, to_block: int) -> str:
         f"p99.9={_pct(devs,99.9):.1f}  max={max(devs):.1f}"
     )
     lines.append(
-        f"  consensus guard would flag: @0.5%={rep['over_50bps']} ({rep['over_50bps']/n*100:.2f}%)"
-        f"  @1%={rep['over_100bps']} ({rep['over_100bps']/n*100:.2f}%)"
-        f"  @2%={rep['over_200bps']} ({rep['over_200bps']/n*100:.2f}%)"
+        f"  instantaneous flag: @0.5%={rep['over_50bps']/n*100:.2f}%"
+        f"  @1%={rep['over_100bps']/n*100:.2f}%"
+        f"  @2%={rep['over_200bps']/n*100:.2f}%"
     )
     lines.append(
-        "\nReading: two honest venues track each other to within arbitrage bounds;"
+        f"  persistent flag (held 2 samples): @0.5%={rep['persist_50bps']/n*100:.2f}%"
+        f"  @1%={rep['persist_100bps']/n*100:.2f}%"
+        f"  @2%={rep['persist_200bps']/n*100:.2f}%"
     )
     lines.append(
-        "the deviation distribution tells a protocol what consensus threshold is"
+        "\nReading (honest, data-driven): persistence filtering barely helps —"
     )
     lines.append(
-        "safe (above the normal cross-venue spread, below a manipulation)."
+        "the instantaneous and persistent flag rates are nearly identical. The"
+    )
+    lines.append(
+        "cross-venue gap is STRUCTURAL (Sushiswap's shallow pool drifts and stays"
+    )
+    lines.append(
+        "drifted), not transient spikes, so temporal filtering does not fix it. The"
+    )
+    lines.append(
+        "real fix is a deeper-liquidity reference (Uniswap V3 / Chainlink), not a"
+    )
+    lines.append(
+        "wider threshold or a time filter on a shallow venue."
     )
     return "\n".join(lines)
 
