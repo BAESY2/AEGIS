@@ -30,6 +30,12 @@ contract YourProtocol {
 block (you revert). `ctx` is an ABI-encoded snapshot **you** define — the
 contract between your function and any defense.
 
+For a complete, runnable example of this exact diff wired into a swap path, see
+[`examples/ProtectedSwapPool.sol`](../examples/ProtectedSwapPool.sol) and its
+end-to-end test [`test/ProtectedPool.t.sol`](../test/ProtectedPool.t.sol): a
+normal trade passes, a pool-draining trade reverts `AEGIS_BLOCKED` at the door,
+and the same pool with no defense lets the drain through.
+
 ## 2. The `ctx` contract
 
 Pass the defense exactly the signal it needs to make a precise decision. The
