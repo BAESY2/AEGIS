@@ -95,6 +95,10 @@ def main(argv: list[str] | None = None) -> int:
     pt.add_argument("--episodes", type=int, default=60)
     pt.add_argument("--seed", type=int, default=0)
 
+    pd = sub.add_parser("dataset", help="generate/extend the EVM-verified trajectory corpus")
+    pd.add_argument("--budget", type=int, default=200, help="number of NEW distinct matchups to add")
+    pd.add_argument("--seed", type=int, default=0)
+
     args = parser.parse_args(argv)
     cache = analysis.ScoreCache()
 
@@ -193,6 +197,23 @@ def main(argv: list[str] | None = None) -> int:
         from . import learn
 
         learn.train(args.scenario, episodes=args.episodes, seed=args.seed)
+        return 0
+
+    if args.cmd == "dataset":
+        from . import sweep
+
+        print(f"generating up to {args.budget} new EVM-verified matchups (seed {args.seed}) ...")
+
+        def _progress(done, total):
+            if done % 25 == 0 or done == total:
+                print(f"  {done}/{total} new records")
+
+        added = sweep.sweep(budget=args.budget, seed=args.seed, on_progress=_progress)
+        card = sweep.write_card()
+        st = sweep.stats()
+        print(f"added {added} records; corpus now {st['total']} total "
+              f"({st['positive_reward']} precise / {st['negative_or_zero_reward']} not)")
+        print(f"wrote {card.relative_to(sweep.ROOT)} and data/trajectories.jsonl")
         return 0
 
     return 1
