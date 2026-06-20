@@ -1,0 +1,166 @@
+"""Population co-evolution — the defense 'training ground' for swarms.
+
+The flagship `env.py` trains ONE defender against a fixed attacker grid. This is
+the next step toward the project's stated vision: a *population* of attacker
+agents and a *population* of defender agents that co-evolve over generations on
+the verifiable AMM simulation (grounded in the wild-data guards). It measures the
+result that matters for a training ground:
+
+    a defender trained against the whole evolving SWARM generalizes to unseen
+    attackers, while a defender tuned against a single (even the strongest)
+    threat overfits and is evaded by the rest.
+
+Everything is deterministic (seeded) and stdlib-only. Reward is the same
+funds-saved/false-positive objective as the rest of Aegis: a defender that blocks
+real users is unusable (fitness -1), so the swarm must stay precise.
+"""
+from __future__ import annotations
+
+import random
+
+from .dex import Pool, PerTradeCap, WindowedCumulativeCap
+
+RIN, ROUT = 1_000_000.0, 2_000_000_000.0
+BENIGN_BPS = 500.0  # an honest trader does 5% of the pool per window, in 4 slices
+
+
+def _drain(defender: tuple[float, float], chunk_frac: float, max_trades: int = 500) -> float:
+    """Fraction of the pool an attacker using `chunk_frac`-sized trades drains
+    against a defender = (per_trade_cap_bps, window_cap_bps)."""
+    per, win = defender
+    pool = Pool(RIN, ROUT)
+    ptc = PerTradeCap(per)
+    wcc = WindowedCumulativeCap(win)
+    wcc.open_window("a", pool.reserve_in)
+    start = pool.reserve_out
+    for _ in range(max_trades):
+        amt = chunk_frac * pool.reserve_in
+        if amt <= 0:
+            break
+        if not ptc.allows(pool, "a", amt) or not wcc.allows(pool, "a", amt):
+            break
+        pool.execute(amt)
+    return (start - pool.reserve_out) / start
+
+
+def _benign_ok(defender: tuple[float, float], slices: int = 4) -> bool:
+    per, win = defender
+    pool = Pool(RIN, ROUT)
+    ptc = PerTradeCap(per)
+    wcc = WindowedCumulativeCap(win)
+    wcc.open_window("b", pool.reserve_in)
+    each = (BENIGN_BPS / 10000.0) / slices * pool.reserve_in
+    for _ in range(slices):
+        if not ptc.allows(pool, "b", each) or not wcc.allows(pool, "b", each):
+            return False
+        pool.execute(each)
+    return True
+
+
+def worst_case_drain(defender: tuple[float, float], attackers) -> float:
+    if not _benign_ok(defender):
+        return 1.0  # unusable: blocks honest traffic
+    return max(_drain(defender, a) for a in attackers)
+
+
+def _mutate_def(d, rng):
+    per, win = d
+    return (
+        min(2000.0, max(20.0, per * rng.uniform(0.7, 1.4))),
+        min(5000.0, max(50.0, win * rng.uniform(0.7, 1.4))),
+    )
+
+
+def _mutate_atk(a, rng):
+    return min(0.5, max(0.0005, a * rng.uniform(0.5, 1.7)))
+
+
+def coevolve(generations: int = 30, pop: int = 16, seed: int = 0) -> dict:
+    """Iterated population co-evolution. Defenders are selected to minimize the
+    worst-case drain over the attacker population (subject to admitting honest
+    traffic); attackers are selected to maximize drain against the best defender.
+    """
+    rng = random.Random(seed)
+    defs = [(rng.uniform(50, 2000), rng.uniform(100, 3000)) for _ in range(pop)]
+    atks = [rng.uniform(0.001, 0.4) for _ in range(pop)]
+    history = []
+    half = pop // 2
+    for g in range(generations):
+        defs.sort(key=lambda d: worst_case_drain(d, atks))  # ascending: best first
+        best_def = defs[0]
+        atks.sort(key=lambda a: _drain(best_def, a), reverse=True)  # strongest first
+        history.append({"gen": g, "best_def": best_def, "worst_drain": worst_case_drain(best_def, atks)})
+        defs = defs[:half] + [_mutate_def(rng.choice(defs[:half]), rng) for _ in range(pop - half)]
+        # attackers: keep the top half, mutate some, and inject fresh "immigrants"
+        # across the chunk-size spectrum so the swarm never stops probing split
+        # attacks (this is what forces the defender to stay robust everywhere).
+        immigrants = 3
+        atks = (atks[: half - immigrants]
+                + [_mutate_atk(rng.choice(atks[:half]), rng) for _ in range(pop - half)]
+                + [rng.choice([0.001, 0.003, 0.01, 0.03, 0.1]) for _ in range(immigrants)])
+    return {"history": history, "best_def": history[-1]["best_def"], "attacker_pop": atks}
+
+
+def best_vs_single(target_attacker: float) -> tuple[float, float]:
+    """The overfit baseline: tune against ONE observed threat. Among the configs
+    that stop that single attacker (subject to admitting honest traffic), a naive
+    engineer keeps the window cap as LOOSE as possible — 'the big trade is already
+    blocked by the per-trade cap, so why add a tight cumulative limit?'. That tie-
+    break is exactly the overfit: it never saw the split attack the window guards."""
+    best = (2000.0, 50.0)
+    best_key = (2.0, -1.0)  # (drain, -window): minimize drain, then maximize window
+    for per in (50, 100, 200, 400, 800, 1600):
+        for win in (500, 1000, 2000, 3000, 5000):
+            d = (float(per), float(win))
+            if not _benign_ok(d):
+                continue
+            key = (round(_drain(d, target_attacker), 6), -win)
+            if key < best_key:
+                best_key, best = key, d
+    return best
+
+
+def generalization_study(seed: int = 0) -> dict:
+    """Train a defender against the SWARM vs against a SINGLE strong threat, then
+    test both on a held-out, diverse attacker population."""
+    co = coevolve(seed=seed)
+    league_def = co["best_def"]
+
+    # the most obvious single threat: a large-chunk drain
+    single_def = best_vs_single(target_attacker=0.4)
+
+    # held-out attackers the defenders never trained on (log-spaced chunk sizes)
+    held_out = [0.0008, 0.002, 0.005, 0.012, 0.03, 0.07, 0.15, 0.35]
+    return {
+        "league_def": league_def,
+        "single_def": single_def,
+        "league_worst_drain": worst_case_drain(league_def, held_out),
+        "single_worst_drain": worst_case_drain(single_def, held_out),
+        "generations": len(co["history"]),
+        "swarm_curve": [round(h["worst_drain"] * 100, 1) for h in co["history"]],
+    }
+
+
+def format_report(r: dict) -> str:
+    lines = []
+    lines.append("Defense training ground — population (swarm) co-evolution")
+    lines.append("=" * 64)
+    curve = r["swarm_curve"]
+    lines.append(f"swarm worst-case drain by generation (%): {curve[0]} -> {curve[-1]}")
+    lines.append(f"  (min reached: {min(curve)}%)")
+    lp, lw = r["league_def"], r["league_worst_drain"]
+    sp, sw = r["single_def"], r["single_worst_drain"]
+    lines.append("")
+    lines.append(f"swarm-trained defender   per={lp[0]:.0f}bps win={lp[1]:.0f}bps "
+                 f"-> held-out worst-case drain {lw*100:.1f}%")
+    lines.append(f"single-threat-tuned def  per={sp[0]:.0f}bps win={sp[1]:.0f}bps "
+                 f"-> held-out worst-case drain {sw*100:.1f}%")
+    lines.append("")
+    if sw > lw:
+        lines.append(f"Swarm training generalizes: it caps unseen attackers at {lw*100:.1f}% "
+                     f"vs {sw*100:.1f}% for the single-threat tuning")
+        lines.append("(which stops the obvious big trade but is evaded by split attacks it "
+                     "never trained against).")
+    else:
+        lines.append("No generalization gap in this run.")
+    return "\n".join(lines)
