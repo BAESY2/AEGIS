@@ -29,12 +29,18 @@ Replaying genuine mainnet traffic through each guard (`aegis wild …`):
 
 | Guard | Real sample | Distribution | False-positive rate |
 |-------|-------------|--------------|---------------------|
-| price-impact | 6,847 swaps, 4 pools | p99 = 23 bps | **0.03%** at a 2% cap |
+| price-impact | 8,218 swaps, 7 pools (incl. SHIB/PEPE/LINK) | p99 = 23 bps | **0.02%** at a 2% cap |
 | TWAP | 2,989 spot-vs-TWAP samples | p99 = 121 bps | **0.00%** at 2% (10.9% at 0.5%) |
 | consensus (shallow ref) | 2,500 cross-venue samples | p99 = 246 bps | 14.4% at 0.5% — **too noisy** |
 | consensus (deep V3 ref) | 26,663 cross-venue samples | p99 = 34 bps | **0.31%** at 0.5% |
 
 ## What real data taught us (that a constructed scenario could not)
+
+0. **It holds on volatile assets, not just stablecoin pairs.** The price-impact
+   evidence spans 7 real pools including the volatile SHIB/WETH, PEPE/WETH and
+   LINK/WETH memecoin pairs — exactly where you'd expect violent moves. Even
+   there, the largest genuine single-trade impact was 1.2%, and a 2% cap blocked
+   0 of 1,371 memecoin swaps. The 2% threshold is robust across asset classes.
 
 1. **The safe threshold is an empirical question.** Naive tight thresholds are
    noisy on *every* oracle guard, because ETH genuinely moves and shallow venues

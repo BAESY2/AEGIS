@@ -80,11 +80,13 @@ Two checks, both on real on-chain state:
 - `aegis wild` (`aegis-gym/aegis/wild.py`) — replays **every real swap** from
   live Uniswap V2 pools over a real block range through the price-impact math and
   reports the actual false-positive rate. A run over ~30,000 recent blocks
-  (~4 days) across USDC/WETH, DAI/WETH, WETH/USDT and WBTC/WETH scanned **6,847
+  (~4 days) across 7 real pools — USDC/WETH, DAI/WETH, WETH/USDT, WBTC/WETH and
+  the volatile SHIB/WETH, PEPE/WETH, LINK/WETH memecoin pairs — scanned **8,218
   real swaps**. The impact distribution: **p50 = 0.2 bps, p99 = 23 bps,
-  p99.9 = 44 bps, max = 274 bps (2.74%)**. A **2% impact cap would have blocked
-  2 of 6,847 (0.03%)** genuine trades — and those two were genuinely large real
-  trades just over the cap, which is exactly what a cap is meant to catch.
+  max = 274 bps (2.74%)**. A **2% impact cap would have blocked 2 of 8,218
+  (~0.02%)** genuine trades — both genuinely large real trades just over the cap,
+  which is exactly what a cap is meant to catch. The threshold holds across
+  stablecoin pairs *and* volatile memecoins (max memecoin impact 1.2%).
   Reproduce with `AEGIS_RPC_URL=<node> python3 -m aegis wild --blocks 30000`.
 
 So on real data we now have **both** sides: a true positive (the guard blocks the

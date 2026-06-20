@@ -72,7 +72,7 @@ class TestWildStats(unittest.TestCase):
         # the Sync topic is the well-known Uniswap V2 event signature hash
         self.assertEqual(len(wild.SYNC_TOPIC), 66)
         self.assertTrue(wild.SYNC_TOPIC.startswith("0x1c411e9a"))
-        self.assertEqual(len(wild.TOP_POOLS), 4)
+        self.assertEqual(len(wild.TOP_POOLS), 7)  # 4 major + 3 volatile memecoin pairs
         self.assertEqual(len(wild.CONSENSUS_VENUES), 2)
 
 

@@ -22,12 +22,17 @@ SWAP_TOPIC = "0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822
 # Sync(uint112 reserve0, uint112 reserve1) — emitted on every pool interaction.
 SYNC_TOPIC = "0x1c411e9a96e071241c2f21f7726b17ae89e3cab4c78be50e062b03a9fffbbad1"
 
-# A few of the deepest, most-traded real Uniswap V2 pools.
+# Real Uniswap V2 pools spanning stablecoin/major pairs AND volatile memecoins —
+# the latter is where a price guard is stress-tested. All addresses are the live
+# pairs returned by the Uniswap V2 factory's getPair (not hand-picked guesses).
 TOP_POOLS = {
     "USDC/WETH": "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc",
     "DAI/WETH": "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11",
     "WETH/USDT": "0x0d4a11d5EEaaC28EC3F61d100daF4d40471f1852",
     "WBTC/WETH": "0xBb2b8038a1640196FbE3e38816F3e67Cba72D940",
+    "SHIB/WETH": "0x811beEd0119b4AfCE20D2583EB608C6F7AF1954f",
+    "PEPE/WETH": "0xA43fe16908251ee70EF74718545e4FE6C5cCEc9f",
+    "LINK/WETH": "0xa2107FA5B38d9bbd2C461D6EDf11B11A50F6b974",
 }
 
 
