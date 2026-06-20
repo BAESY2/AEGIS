@@ -141,6 +141,17 @@ def run(test_frac: float = 0.25, seed: int = 0) -> dict:
         zip(FEATURE_NAMES, model.weights), key=lambda kv: abs(kv[1]), reverse=True
     )
     base_rate = sum(yte) / len(yte) if yte else 0.0
+
+    # per-scenario test accuracy — shows the model works across every class
+    per_scenario: dict[str, dict] = {}
+    for rec in test_recs:
+        m = evaluate(model, [featurize(rec)], [label(rec)])
+        s = per_scenario.setdefault(rec["scenario"], {"n": 0, "correct": 0})
+        s["n"] += 1
+        s["correct"] += m["tp"] + m["tn"]
+    for s in per_scenario.values():
+        s["accuracy"] = s["correct"] / s["n"] if s["n"] else 0.0
+
     return {
         "n_total": len(records),
         "n_train": len(train_recs),
@@ -148,5 +159,6 @@ def run(test_frac: float = 0.25, seed: int = 0) -> dict:
         "test_base_rate": base_rate,
         "train": train_metrics,
         "test": test_metrics,
+        "per_scenario": per_scenario,
         "weights": weights,
     }

@@ -233,6 +233,9 @@ def main(argv: list[str] | None = None) -> int:
             f"(precision {r['test']['precision']:.1%}, recall {r['test']['recall']:.1%}; "
             f"base rate {r['test_base_rate']:.1%})"
         )
+        print("  per-scenario test accuracy:")
+        for sc, m in sorted(r["per_scenario"].items()):
+            print(f"    {sc:<12} {m['accuracy']:.1%}  (n={m['n']})")
         print("  most predictive features (|weight|, standardized):")
         for name, w in r["weights"][:5]:
             print(f"    {name:<14} {w:+.2f}")
