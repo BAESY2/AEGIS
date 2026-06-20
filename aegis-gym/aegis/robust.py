@@ -26,6 +26,10 @@ def _defense_key(rec: dict) -> str:
     p = rec.get("params", {})
     spec = str(p.get("AEGIS_DEF", p.get("AEGIS_GUARD", "")))
     extra = ""
+    if "AEGIS_DEVBPS" in p:
+        extra += f" {p['AEGIS_DEVBPS']}bps"
+    if "AEGIS_WINDOW" in p:
+        extra += f" w={p['AEGIS_WINDOW']}"
     if "AEGIS_CAP" in p:
         extra += f" cap={p['AEGIS_CAP']}"
     if "AEGIS_MAT" in p:

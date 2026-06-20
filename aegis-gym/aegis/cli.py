@@ -84,6 +84,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("space", help="quantify the combinatorial size of the configuration space")
     sub.add_parser("transfer", help="cross-class transfer: does defense-quality generalize across bug classes?")
     sub.add_parser("robust", help="minimax defense under attacker-type uncertainty (behavioral)")
+    sub.add_parser("pareto", help="Pareto frontier of defenses over (worst-case saved, false positives)")
     for name in ("leaderboard", "generalize", "coevolve"):
         p = sub.add_parser(name)
         p.add_argument("scenario", nargs="?", default="all")
@@ -243,6 +244,21 @@ def main(argv: list[str] | None = None) -> int:
             print(f"    stealth >= {c['stealth']:>3}: {c['best_defense']:<20} (reward {c['reward']:+.2f})")
         print("\n  -> the optimal defense depends on the attacker's (unobservable) stealth;")
         print("     the regret quantifies the value of attacker intelligence.")
+        return 0
+
+    if args.cmd == "pareto":
+        from . import pareto
+
+        allf = pareto.run_all()
+        print("Pareto frontier of defenses — (mean funds saved, false positives)\n")
+        for s, rep in allf.items():
+            front = rep["frontier"]
+            tag = "single dominant defense" if len(front) == 1 else f"{len(front)}-point trade-off"
+            print(f"  {s} ({rep['n_defenses']} defenses) -> {tag}:")
+            for p in front[:6]:
+                print(f"      saved {p['mean_saved']:.2f}, fp {p['fp']}   {p['defense']}")
+        print("\n  -> classes with a structural answer collapse to one dominant defense;")
+        print("     the behavioral 'no free lunch' class has a multi-point frontier.")
         return 0
 
     if args.cmd == "leaderboard":
