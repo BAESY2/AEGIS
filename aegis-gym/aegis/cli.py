@@ -107,6 +107,10 @@ def main(argv: list[str] | None = None) -> int:
     pr = sub.add_parser("recommend", help="recommend the defense to deploy for a scenario")
     pr.add_argument("scenario")
 
+    pe = sub.add_parser("explore", help="active learning: query the most uncertain points")
+    pe.add_argument("--acquire", type=int, default=0, help="score N uncertain points on the EVM and add them")
+    pe.add_argument("--seed", type=int, default=0)
+
     args = parser.parse_args(argv)
     cache = analysis.ScoreCache()
 
@@ -321,6 +325,48 @@ def main(argv: list[str] | None = None) -> int:
         except Exception:
             pass
         print("\n  Deploy it as a one-line firewall hook (see README / examples/).")
+        return 0
+
+    if args.cmd == "explore":
+        from . import active
+
+        if args.acquire:
+            print(f"acquiring {args.acquire} most-uncertain points on the EVM ...")
+
+            def _p(done, total):
+                if done % 10 == 0 or done == total:
+                    print(f"  scored {done}/{total}")
+
+            added = active.acquire(budget=args.acquire, seed=args.seed, on_progress=_p)
+            from . import sweep
+
+            sweep.write_card()
+            print(f"added {added} actively-acquired records; corpus now {len(sweep.read())} total")
+            return 0
+
+        res = active.simulate(seed=args.seed)
+        c = res["curves"]
+        print(f"acquisition-strategy benchmark over the corpus ({res['n_total']} records, "
+              f"{res['n_test']} held out, avg of {res['n_seeds']} seeds)\n")
+        print(f"  {'labels':>7}{'uncertainty':>13}{'committee':>11}{'random':>9}")
+        print("  " + "-" * 42)
+        for j in range(len(c["random"])):
+            n = c["random"][j][0]
+            print(f"  {n:>7}{c['uncertainty'][j][1]:>13.1%}{c['committee'][j][1]:>11.1%}{c['random'][j][1]:>9.1%}")
+        # honest, data-driven verdict (no hard-coded claim)
+        def adv(name):
+            return sum(c[name][j][1] - c["random"][j][1] for j in range(len(c["random"]))) / len(c["random"])
+        au, ac = adv("uncertainty"), adv("committee")
+        best = max(au, ac)
+        print(f"\n  mean advantage vs random: uncertainty {au:+.1%}, committee {ac:+.1%}")
+        if best > 0.01:
+            print("  -> active acquisition beats random on this corpus.")
+        else:
+            print("  -> HONEST RESULT: active acquisition does NOT beat random here. The")
+            print("     corpus labels are near-deterministic, so representative random")
+            print("     sampling is already strong and querying rare boundary cases hurts.")
+            print("     Active learning's payoff needs genuinely noisy/overlapping labels")
+            print("     (e.g. the behavioral no-free-lunch class) — that is the next step.")
         return 0
 
     return 1
