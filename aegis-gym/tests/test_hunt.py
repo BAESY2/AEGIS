@@ -50,6 +50,12 @@ class TestSourceScan(unittest.TestCase):
         self.assertEqual(scan["risky"], {})
         self.assertIn("no obvious spot-price reads", hunt.format_scan("x", scan))
 
+    def test_etherscan_chain_map(self):
+        # the multichain helper knows the major EVM chain ids
+        self.assertEqual(hunt.ETHERSCAN_CHAINS["ethereum"], 1)
+        self.assertEqual(hunt.ETHERSCAN_CHAINS["bsc"], 56)
+        self.assertEqual(hunt.ETHERSCAN_CHAINS["base"], 8453)
+
 
 if __name__ == "__main__":
     unittest.main()
