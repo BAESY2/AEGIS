@@ -2,12 +2,27 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {CircuitBreaker} from "../src/CircuitBreaker.sol";
-import {MultiSourceConsensusGuard} from "../src/defenses/MultiSourceConsensusGuard.sol";
+import {CircuitBreaker, IPairLike} from "../src/CircuitBreaker.sol";
 
-/// @notice A protocol that installs the breaker: a sensitive action is gated by
-///         `whenLive`, the keeper trips it on detected manipulation, and only
-///         governance can restart.
+contract MockPair is IPairLike {
+    uint112 r0;
+    uint112 r1;
+
+    constructor(uint112 _r0, uint112 _r1) {
+        r0 = _r0;
+        r1 = _r1;
+    }
+
+    function set(uint112 _r0, uint112 _r1) external {
+        r0 = _r0;
+        r1 = _r1;
+    }
+
+    function getReserves() external view returns (uint112, uint112, uint32) {
+        return (r0, r1, 0);
+    }
+}
+
 contract ProtectedMarket {
     CircuitBreaker public breaker;
     uint256 public borrowed;
@@ -25,14 +40,18 @@ contract ProtectedMarket {
 contract CircuitBreakerTest is Test {
     CircuitBreaker breaker;
     ProtectedMarket market;
+    MockPair pa;
+    MockPair pb;
     address keeper = makeAddr("keeper");
-    address gov = address(this);
 
     function setUp() public {
-        address[] memory guardians = new address[](1);
-        guardians[0] = keeper;
-        breaker = new CircuitBreaker(guardians); // owner = this (governance)
+        address[] memory g = new address[](1);
+        g[0] = keeper;
+        breaker = new CircuitBreaker(g, 100, 10); // 100-block bounded pause, 10-block cooldown
         market = new ProtectedMarket(breaker);
+        pa = new MockPair(1000e6, 1e18); // ~$1000
+        pb = new MockPair(1000e6, 1e18); // independent reference, agrees
+        breaker.setSources(address(pa), address(pb), 500); // 5% auto-trip threshold
     }
 
     function test_normal_operation_passes() public {
@@ -40,52 +59,76 @@ contract CircuitBreakerTest is Test {
         assertEq(market.borrowed(), 100);
     }
 
-    function test_keeper_trips_and_market_pauses() public {
+    function test_alert_only_by_default_does_not_pause() public {
+        // default mode is ALERT_ONLY: a guardian "trip" only signals, never halts
         vm.prank(keeper);
-        breaker.trip("oracle deviation 56x vs reference");
-        assertTrue(breaker.tripped());
-        vm.expectRevert(CircuitBreaker.Paused.selector);
-        market.borrow(100);
+        breaker.trip("suspicious divergence");
+        assertFalse(breaker.isPaused());
+        market.borrow(1); // still live
     }
 
-    function test_only_governance_resets() public {
-        vm.prank(keeper);
-        breaker.trip("manipulation");
-        // a guardian cannot restart the market
-        vm.prank(keeper);
-        vm.expectRevert(CircuitBreaker.NotOwner.selector);
-        breaker.reset();
-        // governance can
-        breaker.reset();
-        assertFalse(breaker.tripped());
-        market.borrow(50);
-        assertEq(market.borrowed(), 50);
+    function test_griefing_blocked_when_sources_agree() public {
+        breaker.setMode(CircuitBreaker.Mode.AUTO_PAUSE);
+        // a random actor tries to grief a false pause; sources agree -> revert
+        vm.prank(makeAddr("griefer"));
+        vm.expectRevert(CircuitBreaker.NoManipulation.selector);
+        breaker.autoTripFromSources();
+        assertFalse(breaker.isPaused());
     }
 
-    function test_random_address_cannot_trip() public {
-        vm.prank(makeAddr("bad"));
-        vm.expectRevert(CircuitBreaker.NotGuardian.selector);
-        breaker.trip("griefing");
-    }
-
-    function test_onchain_auto_trip_from_defense_evidence() public {
-        // wire a consensus guard as the on-chain auto-trip evidence
-        breaker.setAutoTrip(new MultiSourceConsensusGuard(500)); // 5%
-        // a manipulated price (one source 50x the others) => guard blocks => anyone can trip
-        bytes memory manipulated = abi.encode(uint256(50000e18), uint256(1000e18), uint256(1000e18));
-        vm.prank(makeAddr("anyone"));
-        breaker.autoTripWith(manipulated);
-        assertTrue(breaker.tripped());
-        vm.expectRevert(CircuitBreaker.Paused.selector);
+    function test_auto_trip_only_on_real_divergence() public {
+        breaker.setMode(CircuitBreaker.Mode.AUTO_PAUSE);
+        // a REAL manipulation: source A's price moves 2x away from the reference
+        pa.set(2000e6, 1e18);
+        assertGt(breaker.currentDeviationBps(), 500);
+        breaker.autoTripFromSources(); // now anyone may trip, because it's real
+        assertTrue(breaker.isPaused());
+        vm.expectRevert(CircuitBreaker.Paused_.selector);
         market.borrow(1);
     }
 
-    function test_auto_trip_reverts_on_genuine_price() public {
-        breaker.setAutoTrip(new MultiSourceConsensusGuard(500));
-        // three sources agree => guard allows => cannot trip
-        bytes memory genuine = abi.encode(uint256(1000e18), uint256(1001e18), uint256(999e18));
-        vm.expectRevert(bytes("defense allows: no manipulation"));
-        breaker.autoTripWith(genuine);
-        assertFalse(breaker.tripped());
+    function test_pause_is_bounded_and_self_heals() public {
+        breaker.setMode(CircuitBreaker.Mode.AUTO_PAUSE);
+        pa.set(2000e6, 1e18);
+        breaker.autoTripFromSources();
+        assertTrue(breaker.isPaused());
+        // a false pause is NOT permanent: after maxPauseBlocks it auto-resumes
+        vm.roll(block.number + 101);
+        assertFalse(breaker.isPaused());
+        market.borrow(7);
+        assertEq(market.borrowed(), 7);
+    }
+
+    function test_governance_can_ratify_a_real_incident() public {
+        breaker.setMode(CircuitBreaker.Mode.AUTO_PAUSE);
+        pa.set(2000e6, 1e18);
+        breaker.autoTripFromSources();
+        breaker.ratify(); // governance confirms it's real -> hold past the timeout
+        vm.roll(block.number + 101);
+        assertTrue(breaker.isPaused()); // stays paused until reset
+        breaker.reset();
+        assertFalse(breaker.isPaused());
+    }
+
+    function test_cooldown_rate_limits_trips() public {
+        breaker.setMode(CircuitBreaker.Mode.AUTO_PAUSE);
+        pa.set(2000e6, 1e18);
+        breaker.autoTripFromSources();
+        breaker.reset();
+        // within the cooldown window, cannot trip again
+        vm.expectRevert(CircuitBreaker.Cooldown.selector);
+        breaker.autoTripFromSources();
+        vm.roll(block.number + 11);
+        breaker.autoTripFromSources(); // ok after cooldown
+        assertTrue(breaker.isPaused());
+    }
+
+    function test_only_governance_resets() public {
+        breaker.setMode(CircuitBreaker.Mode.AUTO_PAUSE);
+        pa.set(2000e6, 1e18);
+        breaker.autoTripFromSources();
+        vm.prank(keeper);
+        vm.expectRevert(CircuitBreaker.NotOwner.selector);
+        breaker.reset();
     }
 }
