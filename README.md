@@ -74,10 +74,10 @@ Everything below runs from one dependency-free CLI; every number is EVM-verified
 | **Leaderboard + chart** | worst-case ranking per class, auto-generated | `aegis bench` |
 | **Co-evolution** | attacker/defender arms race (0.00 → 0.50 robustness) | `aegis coevolve` |
 | **AMM arms race** | attacker *search* discovers split-trade evasion (98% drain); defender best-responds with a windowed cap (→ 4.7%) | `aegis dex-coevolve` |
-| **Swarm training** | a population of attacker/defender agents co-evolves; the swarm-trained defense caps unseen attackers at **4.7%** vs **33%** for single-threat tuning | `aegis arena` |
+| **Population co-evolution** | evolutionary co-evolution of attacker/defender populations (not a production "AI swarm" — see [SCALING](./docs/SCALING.md)); the co-evolved defense caps unseen attackers at **4.7%** vs **33%** for single-threat tuning | `aegis arena` |
 | **Adaptive policy** | the defender evolves a *context-aware* policy (cap = honest demand) that beats the best fixed cap — **8%** mean drain vs **17%**, up to 9× tighter on quiet pools | `aegis arena --adaptive` |
 | **Real-data training** | the threshold is selected on **459 captured real mainnet swaps** + the real exploit corpus — **0% false positives, 100% recall**, a 22× separation margin (not a synthetic test) | `aegis arena --real` |
-| **Installable firewall** | an on-chain `CircuitBreaker` a protocol drops in — a keeper (or on-chain evidence) trips it to pause the market in one block; governance resets | [`src/CircuitBreaker.sol`](./src/CircuitBreaker.sol) |
+| **Installable firewall** | an on-chain `CircuitBreaker` a protocol drops in — **alert-only by default**, opt-in auto-pause that reads independent on-chain sources itself (unforgeable, griefing-resistant) and is **bounded/self-healing** so a false pause is never a permanent freeze | [`src/CircuitBreaker.sol`](./src/CircuitBreaker.sol) |
 | **Policy-gradient RL** | an agent learns a robust defense from the reward alone | `aegis train` |
 | **~10^10 space** | parameter ranges × 2^N defense compositions | `aegis space` |
 | **Dataset + model** | 2,300+ EVM-verified labels; a "will this hold?" classifier | `aegis dataset` / `classify` |
